@@ -1,0 +1,14 @@
+{
+  "name": "LionsLTS LR26_fischer",
+  "changes": [
+    "m=290",
+    "c_w=1.769636015",
+    "c_z=4.03256705",
+    "aero_bal_f=0.5299881235",
+    "drive_awd=1",
+    "T_motor=116",
+    "n_max=12500"
+  ],
+  "notes": "From LionsLTS LR26_fischer.yml; aero areas c_w_a / c_z_a_f / c_z_a_r converted with the LapSim aero_eff 0.8 (drag area kept; LionsLTS applies the efficiency factor to downforce only); AWD: LapSim puts an identical motor set on the front axle; check that torque_e_motor_max means the same in the LionsLTS file",
+  "saved": "2026-11-04 10:03"
+}

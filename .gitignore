@@ -1,0 +1,42 @@
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+__pycache__/
+*.pyc
+*.candump
+out/
+.pytest_cache/
+results/
+# MATLAB output inside the LapSim folder (run_lapsim, Simulink cache)
+lapsim/LR26_LapSim/lts_results_*
+lapsim/LR26_LapSim/slprj/
+lapsim/LR26_LapSim/*.slxc
+lapsim/LR26_LapSim/*.asv
+shared/
+# YOLO camera cones: recorded images and training runs (the exported model.onnx / model.json are kept)
+datasets/
+models/cones/*/run/
+models/cones/*/data/
+
+# Confidential, never in git (team decision 13 Nov 2026: code + trained models only). They stay on the team drive
+# (docs/INSTALL.md step 2); tools/git_push.py refuses to push them even if these lines are removed.
+cad/
+*.stp
+*.step
+*.STP
+*.STEP
+assets/lr26/*.usda
+lapsim/LR26_LapSim/
+# pretrained YOLO weights: Ultralytics downloads them again
+/yolo11n.pt
+
+# Performance Lab: car logs uploaded in the page (large, team data)
+perf/uploads/
+
+# LaTeX build files of docs/paper (the PDFs are kept)
+docs/paper/*.aux
+docs/paper/*.log
+docs/paper/*.out
+docs/paper/*.toc
+docs/paper/*.fls
+docs/paper/*.fdb_latexmk

@@ -1,0 +1,63 @@
+# Simulation, event layout and AS settings.
+# Event dimensions and penalties follow the FS Rules as commonly applied at
+# FSG; check every value against the rules version of your season
+# (chapter D for the events, T 14 / T 15 for the AS) and adjust here.
+
+sim:
+  physics_rate_hz: 500.0
+  realtime_factor: 1.0
+  seed: 42
+  mission: trackdrive          # acceleration | skidpad | autocross | trackdrive | ebs_test
+  track_file: ""               # optional EUFS-style CSV; empty -> generated layout
+  auto_activate: true          # select mission + ASMS on at startup
+  auto_go: true                # send Go automatically (else: ros2 service call /as/go ...)
+  go_delay_s: 5.5
+  auto_go_wait_for_stack: true # wait until /control/command is received before Go
+  publish_ground_truth: true
+  publish_gt_tf: true          # map -> base_link from ground truth (disable when your SLAM publishes it)
+  analytic_lidar: true         # lite backend only
+  analytic_camera: true        # lite backend only
+  candump_log: ""              # e.g. /tmp/dv_log.candump -> 0x500/0x501/0x502 frames
+
+events:
+  acceleration:
+    length: 75.0
+    width: 4.0
+    cone_spacing: 5.0
+    stop_length: 100.0
+    staging_gap: 0.3
+  skidpad:
+    inner_diameter: 15.25
+    outer_diameter: 21.25
+    center_distance: 18.25
+    entry_length: 15.0
+    exit_length: 25.0
+    laps_per_side: 2
+    inner_cones: 16
+    outer_cones: 13
+  track_generator:
+    width: 3.5
+    min_radius: 4.5
+    length_range: [280.0, 450.0]
+    max_straight: 80.0
+    box: [110.0, 70.0]
+    seed: 7                    # change to get a different autocross / trackdrive layout
+    staging_distance: 6.0
+    max_cone_spacing: 5.0
+    min_cone_spacing: 2.0
+  autocross_laps: 1
+  trackdrive_laps: 10
+  ebs_test_trigger_distance: 40.0
+
+penalties:
+  cone_down_s: 2.0
+  off_course_s: 10.0
+
+autonomous_system:
+  ready_min_time_s: 5.0
+  ebs_decel: 10.0
+  hold_decel: 5.0
+  standstill_speed: 0.1
+  standstill_time_s: 1.0
+  command_timeout_s: 1.0
+  leave_track_distance: 8.0

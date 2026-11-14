@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lions Racing · DV Launcher</title>
+<meta name="theme-color" content="#0c1118">
+<link rel="icon" type="image/png" href="/brand/favicon.png">
+<link rel="preload" href="/brand/bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/brand/style.css">
+<link rel="stylesheet" href="/static/launcher.css">
+</head>
+<body>
+<header class="brand">
+  <a class="brand-id" href="/" aria-label="Lions Racing Team, DV launcher">
+    <img src="/brand/lions-logo.png" alt="Lions Racing Team" width="480" height="179">
+    <span class="brand-app">DV Launcher</span>
+  </a>
+  <nav class="tabs" aria-label="Sections">
+    <a href="#sim" aria-current="page" id="nav-sim">Simulation</a>
+    <a href="#setup" id="nav-setup">Vehicle setup</a>
+    <a href="#tools" id="nav-tools">RL &amp; Performance</a>
+    <a href="#maint" id="nav-maint">Maintenance</a>
+    <a href="#" id="dash-link" class="dash-link" target="_blank" rel="noopener" hidden>Open dashboard ↗</a>
+  </nav>
+</header>
+
+<section class="hero" id="hero" data-state="idle">
+  <div>
+    <h1 id="hero-title">Ready</h1>
+    <p id="hero-sub">Choose how to run the simulator and press Start.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="btn primary big" id="hero-dash" href="#" target="_blank" rel="noopener" hidden>Open dashboard</a>
+    <button type="button" class="btn big" id="hero-stop" hidden>Stop simulation</button>
+  </div>
+</section>
+
+<main class="lgrid" id="page-main">
+  <!-- ================================================================ simulation -->
+  <section class="panel sim-panel" id="sim" aria-labelledby="sim-h">
+    <h2 id="sim-h">Simulation</h2>
+    <form id="sim-form" class="form" autocomplete="off" novalidate>
+      <fieldset class="opt">
+        <legend>Simulator</legend>
+        <div class="cards" role="radiogroup" aria-label="Simulator">
+          <label class="card"><input type="radio" name="backend" value="isaac" checked>
+            <b>Isaac Sim</b><span>RTX LiDAR and ZED camera images, on Windows. Needs the NVIDIA GPU.</span></label>
+          <label class="card"><input type="radio" name="backend" value="lite">
+            <b>Lite</b><span>Analytic LiDAR and cone detections in WSL. No GPU, starts in seconds.</span></label>
+          <label class="card"><input type="radio" name="backend" value="demo">
+            <b>Offline demo</b><span>Simulator and dashboard only, no ROS 2. For trying setups and drivers.</span></label>
+        </div>
+      </fieldset>
+
+      <div class="row">
+        <label class="field">Mission
+          <select name="mission" id="f-mission"></select>
+        </label>
+        <label class="field" id="seed-wrap">Track layout (seed)
+          <input type="number" name="seed" min="0" max="99999" placeholder="sim.yaml">
+        </label>
+        <label class="field" id="rtf-wrap">Real-time factor
+          <input type="number" name="rtf" value="1" min="0.1" max="20" step="any">
+        </label>
+      </div>
+
+      <fieldset class="opt veh" id="veh">
+        <legend>Vehicle setup</legend>
+        <div class="row">
+          <label class="field grow">Configuration
+            <select id="f-config" class="cfg-select"><option value="">LapSim baseline (lr26_params.m)</option></select>
+          </label>
+          <label class="field grow">Changes <span class="muted">(m=270 c_z*1.05 mux*0.95)</span>
+            <input type="text" name="changes" id="f-changes" spellcheck="false" placeholder="none: the LapSim baseline">
+          </label>
+          <a class="btn" href="#setup" id="btn-edit-setup">Edit parameters</a>
+        </div>
+        <div class="veh-brief" id="veh-brief" aria-live="polite"></div>
+      </fieldset>
+
+      <div class="row">
+        <div class="field">Throttle and brake
+          <div class="seg" role="group" aria-label="Driver">
+            <button type="button" data-lon="reference" aria-pressed="true">Reference driver</button>
+            <button type="button" data-lon="rl" aria-pressed="false">RL (learned)</button>
+          </div>
+        </div>
+        <label class="field grow" id="pol-wrap" hidden>RL policy
+          <select name="policy" id="f-policy"></select>
+        </label>
+      </div>
+
+      <div class="row" id="cones-wrap">
+        <div class="field">Cones for the driver
+          <div class="seg" role="group" aria-label="Cones for the driver">
+            <button type="button" data-percep="none" aria-pressed="true">Ground truth</button>
+            <button type="button" data-percep="lidar" aria-pressed="false">LiDAR</button>
+            <button type="button" data-percep="fusion" aria-pressed="false">LiDAR + camera</button>
+            <button type="button" data-percep="camera" aria-pressed="false">Camera + map</button>
+            <button type="button" data-percep="yolo" aria-pressed="false">Camera (YOLO)</button>
+          </div>
+        </div>
+        <label class="field grow" id="cone-model-wrap" hidden>Cone detector
+          <select name="cone_model" id="f-cone-model"></select>
+        </label>
+        <p class="hint small grow" id="cones-hint"></p>
+      </div>
+
+      <div class="row" id="adv-wrap">
+        <label class="field" id="line-wrap">Path on circuits
+          <select name="line" id="f-line">
+            <option value="center">Centre line</option>
+            <option value="racing">Racing line</option>
+          </select>
+        </label>
+        <label class="field">Handling model
+          <select name="handling" id="f-handling">
+            <option value="single_track">Single track (LapSim axles)</option>
+            <option value="double_track">Double track (four wheels)</option>
+          </select>
+        </label>
+        <label class="field" id="race-wrap" hidden>Race on the mapped track after
+          <select name="race_after" id="f-race-after">
+            <option value="0">never (follow the cones)</option>
+            <option value="1">1 lap</option>
+            <option value="2">2 laps</option>
+          </select>
+        </label>
+        <label class="field grow" id="faults-wrap">Sensor faults (optional)
+          <input type="text" name="faults" id="f-faults" placeholder="lidar:dropout@20+3, imu:bias=0.02@10" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+
+      <div class="row checks">
+        <label class="check" id="slam-wrap" hidden><input type="checkbox" name="slam" checked> Car position from SLAM (no ground truth)</label>
+        <label class="check" id="record-wrap"><input type="checkbox" name="record_cones"> Record camera images for YOLO training</label>
+        <label class="check" id="rviz-wrap"><input type="checkbox" name="rviz" checked> RViz window</label>
+        <label class="check" id="headless-wrap"><input type="checkbox" name="headless"> Isaac Sim without its window (headless)</label>
+      </div>
+
+      <div class="row actions">
+        <button type="submit" class="btn primary big" id="btn-start">Start simulation</button>
+        <button type="button" class="btn big" id="btn-stop" disabled>Stop</button>
+        <p class="msg" id="sim-msg" role="status"></p>
+      </div>
+    </form>
+    <ol class="steps" id="steps"></ol>
+  </section>
+
+  <!-- ================================================================ status -->
+  <aside class="side">
+    <section class="panel" aria-labelledby="st-h">
+      <h2 id="st-h">System</h2>
+      <ul class="checks-list" id="checks"></ul>
+      <div class="row tight">
+        <button type="button" class="btn" id="btn-router">Start Zenoh router</button>
+      </div>
+    </section>
+    <section class="panel" aria-labelledby="pr-h">
+      <h2 id="pr-h">Running</h2>
+      <ul class="procs" id="procs"></ul>
+    </section>
+    <section class="panel share" aria-labelledby="sh-h">
+      <h2 id="sh-h">Share with Claude</h2>
+      <p class="hint">One report with the system state, the simulation steps, every process and job, their logs and
+        result tables.</p>
+      <div class="row tight">
+        <button type="button" class="btn primary" id="btn-report-save">Save report to the project</button>
+        <button type="button" class="btn" id="btn-report-copy">Copy report</button>
+      </div>
+      <p class="msg" id="share-msg" role="status"></p>
+      <p class="hint small">Saved reports go to <code>shared\&lt;date&gt;</code> in the project folder (complete logs
+        included), where Claude can read them: just say "I saved a report". Copy puts it on the clipboard to paste in the chat.</p>
+    </section>
+  </aside>
+
+  <!-- ================================================================ tools -->
+  <section class="panel tools-panel" id="tools" aria-labelledby="tools-h">
+    <h2 id="tools-h">RL &amp; Performance tools</h2>
+    <p class="hint">Each tool runs in the background; follow it under <b>Jobs</b>. Vehicle changes use the LapSim names.</p>
+    <div class="perf-lab-card">
+      <div>
+        <h3>Performance Lab</h3>
+        <p class="hint small">The lap time simulation on its own: points per event, sensitivities, sweeps, setup comparison,
+          transient lap, energy, ggV and car logs. Runs on Windows in its own window (no WSL needed): also
+          <code>Performance Lab.bat</code> in the project folder or the desktop shortcut it can make.</p>
+      </div>
+      <div class="row tight">
+        <button type="button" class="btn primary" data-job-btn="perf_lab">Open the Performance Lab</button>
+        <a class="btn" href="http://localhost:8090" target="_blank" rel="noopener">Its page (when running)</a>
+      </div>
+    </div>
+    <div class="tools">
+      <form class="tool" data-job="evaluate" novalidate>
+        <h3>Official runs: RL vs reference</h3>
+        <p>Complete missions in the full simulator (timing, cones) for any setup.</p>
+        <label class="field">Policy <select name="policy" class="pol-select"></select></label>
+        <label class="field">Vehicle changes <input type="text" name="changes" spellcheck="false" placeholder="baseline"></label>
+        <button class="btn primary" type="submit">Run</button>
+      </form>
+
+      <form class="tool" data-job="sweep" novalidate>
+        <h3>Setup sweep (universal RL)</h3>
+        <p>Many setups × tracks at once in the batched model: times, limits, sensitivities, LapSim next to them.</p>
+        <label class="field">Vary <span class="muted">(one per line: m=250:320:4, c_z=3.5,4.15,4.8, mu*0.9:1.1:5)</span>
+          <textarea name="vary" rows="2" spellcheck="false">m=250:320:4</textarea></label>
+        <div class="row tight">
+          <label class="field">Autocross layouts <input type="number" name="tracks" value="6" min="0" max="200"></label>
+          <label class="field grow">Base changes <input type="text" name="changes" spellcheck="false" placeholder="none"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="compare" checked> Also the reference driver's law</label>
+        <label class="check"><input type="checkbox" name="backend" value="torch"> On the GPU (PyTorch)</label>
+        <button class="btn primary" type="submit">Run sweep</button>
+      </form>
+
+      <form class="tool" data-job="param_study" novalidate>
+        <h3>Parameter study</h3>
+        <p>LapSim, the DV target and the closed-loop simulation for each value; HTML report.</p>
+        <div class="row tight">
+          <label class="field">Parameter <input type="text" name="param" value="m" spellcheck="false"></label>
+          <label class="field grow">Values <input type="text" name="values" value="260,284,310" spellcheck="false"></label>
+        </div>
+        <div class="row tight">
+          <label class="field">Values are
+            <select name="mode"><option value="values">absolute</option><option value="scale">factors</option></select></label>
+          <label class="field">Driver
+            <select name="driver"><option value="reference">reference</option><option value="rl">RL (universal)</option></select></label>
+        </div>
+        <div class="events">
+          <label class="check"><input type="checkbox" name="events" value="acceleration" checked> Acceleration</label>
+          <label class="check"><input type="checkbox" name="events" value="skidpad" checked> Skidpad</label>
+          <label class="check"><input type="checkbox" name="events" value="autocross" checked> Autocross</label>
+          <label class="check"><input type="checkbox" name="events" value="trackdrive"> Trackdrive</label>
+        </div>
+        <label class="check"><input type="checkbox" name="no_sim"> LapSim only (seconds)</label>
+        <button class="btn primary" type="submit">Run study</button>
+      </form>
+
+      <form class="tool" data-job="train_universal" novalidate>
+        <h3>Train the universal policy</h3>
+        <p>One policy for every setup in the ranges (PPO). GPU: about 1500 iterations; CPU: hours.</p>
+        <div class="row tight">
+          <label class="field">Compute
+            <select name="backend"><option value="numpy">CPU (NumPy)</option><option value="torch">GPU (PyTorch)</option></select></label>
+          <label class="field">Iterations <input type="number" name="iterations" placeholder="auto" min="1"></label>
+          <label class="field">Cars <input type="number" name="num_envs" placeholder="auto" min="8"></label>
+        </div>
+        <div class="row tight">
+          <label class="field grow">Name <input type="text" name="name" spellcheck="false" placeholder="universal_&lt;date&gt;"></label>
+          <label class="field grow">Continue from <select name="init" class="pol-select uni-only"></select></label>
+        </div>
+        <button class="btn primary" type="submit">Start training</button>
+      </form>
+
+      <form class="tool" data-job="train_cones" novalidate>
+        <h3>Train the cone detector (YOLO)</h3>
+        <p>Ultralytics YOLO11 on the camera images recorded in Isaac Sim, on the GPU. <span id="cone-data-line"></span></p>
+        <div class="row tight">
+          <label class="field">Model
+            <select name="size"><option value="n">YOLO11n (fast)</option><option value="s">YOLO11s (more accurate)</option></select></label>
+          <label class="field">Epochs <input type="number" name="epochs" value="60" min="1" max="1000"></label>
+          <label class="field">Batch <input type="number" name="batch" value="16" min="1" max="256"></label>
+        </div>
+        <label class="field">Name <input type="text" name="name" spellcheck="false" placeholder="cones_&lt;date&gt;"></label>
+        <button class="btn primary" type="submit">Start training</button>
+      </form>
+
+      <form class="tool" data-job="train_setup" novalidate>
+        <h3>Train for one setup</h3>
+        <p>Evolution strategies on the CPU for exactly one vehicle setup (10–40 min for 50 generations).</p>
+        <label class="field">Vehicle changes <input type="text" name="changes" spellcheck="false" placeholder="baseline"></label>
+        <div class="row tight">
+          <label class="field">Generations <input type="number" name="generations" value="50" min="1" max="1000"></label>
+          <label class="field grow">Name <input type="text" name="name" spellcheck="false" placeholder="automatic"></label>
+        </div>
+        <button class="btn primary" type="submit">Start training</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="panel jobs-panel" aria-labelledby="jobs-h">
+    <h2 id="jobs-h">Jobs</h2>
+    <ul class="jobs" id="jobs"><li class="empty">No jobs yet.</li></ul>
+  </section>
+
+  <!-- ================================================================ maintenance -->
+  <section class="panel maint-panel" id="maint" aria-labelledby="maint-h">
+    <h2 id="maint-h">Maintenance</h2>
+    <div class="maint">
+      <div>
+        <h3>Update</h3>
+        <p class="hint">Installs <code id="zip-path">Downloads\fsg-dv-sim.zip</code> over this copy and builds it
+          (what <code>unzip</code> + <code>fsgbuild</code> do). Stop the simulation first.</p>
+        <div class="row tight">
+          <button type="button" class="btn primary" data-job-btn="update">Install update from zip</button>
+          <button type="button" class="btn" data-job-btn="build">Build workspace</button>
+          <button type="button" class="btn" data-job-btn="tests">Run tests</button>
+          <button type="button" class="btn" data-job-btn="check_install">Check the installation</button>
+          <button type="button" class="btn" data-job-btn="diagnose">Diagnose WSL (processes, memory)</button>
+          <button type="button" class="btn" data-job-btn="regression" data-job-params='{"quick": true}'>Regression run (quick)</button>
+          <button type="button" class="btn" data-job-btn="regression">Regression run (all, ~3 min)</button>
+          <button type="button" class="btn" data-job-btn="desktop">Put run.bat on the desktop</button>
+          <button type="button" class="btn" data-job-btn="shell">Use this copy in WSL terminals</button>
+        </div>
+        <h3 class="mt">GPU (PyTorch)</h3>
+        <p class="hint" id="gpu-line">GPU training and GPU sweeps use the Windows Python when it has PyTorch with CUDA,
+          else PyTorch in WSL.</p>
+        <div class="row tight">
+          <button type="button" class="btn" data-job-btn="gpu_tests">Check the GPU code (PyTorch tests)</button>
+          <button type="button" class="btn" data-job-btn="win_pip">Install packages for GPU jobs</button>
+          <button type="button" class="btn" id="btn-wincheck">Check Windows Python again</button>
+        </div>
+        <h3 class="mt">Camera cones (YOLO)</h3>
+        <p class="hint">Training runs on the Windows Python (Ultralytics, AGPL-3.0); the car's detector runs in WSL with
+          ONNX Runtime (OpenCV's DNN module if it is missing).</p>
+        <div class="row tight">
+          <button type="button" class="btn" data-job-btn="yolo_pip">Install YOLO (Ultralytics) for the Windows Python</button>
+          <button type="button" class="btn" data-job-btn="ort_pip">Install ONNX Runtime in WSL</button>
+        </div>
+        <h3 class="mt">GitHub / GitLab</h3>
+        <form id="git-form" autocomplete="off" novalidate>
+          <p class="hint">Commits this copy and pushes it to both repositories at once (Git for Windows; the first push
+            opens a browser sign-in for each site, then it is remembered). Code and trained models only: the CAD,
+            the LR26 body USD and the LapSim stay out, and a push that would include them is refused.</p>
+          <label class="field">GitHub repository <input type="text" name="git_github" spellcheck="false" placeholder="https://github.com/team/fsg-dv-sim.git"></label>
+          <label class="field">GitLab repository <input type="text" name="git_gitlab" spellcheck="false" placeholder="https://gitlab.com/group/fsg-dv-sim.git"></label>
+          <div class="row tight">
+            <label class="field">Branch <input type="text" name="git_branch" spellcheck="false" placeholder="main"></label>
+            <label class="field">Author name <input type="text" name="git_name" spellcheck="false" placeholder="from git config"></label>
+            <label class="field">Author e-mail <input type="text" name="git_email" spellcheck="false" placeholder="from git config"></label>
+          </div>
+          <label class="field">Commit message <input type="text" name="git_message" maxlength="500" placeholder="what changed"></label>
+          <div class="row tight">
+            <button type="button" class="btn" id="git-save">Save</button>
+            <button type="button" class="btn" id="git-check">Check what would be pushed</button>
+            <button type="button" class="btn primary" id="git-push">Commit and push to both</button>
+          </div>
+        </form>
+      </div>
+      <form id="settings-form" autocomplete="off" novalidate>
+        <h3>Settings</h3>
+        <label class="field">Isaac Sim folder (python.bat) <input type="text" name="isaac_path" spellcheck="false"></label>
+        <label class="field">or Isaac Python (Isaac Lab venv) <input type="text" name="isaac_python" spellcheck="false" placeholder="optional"></label>
+        <label class="field">Windows Python for GPU jobs <input type="text" name="win_python" spellcheck="false" placeholder="found on PATH, e.g. C:\Python314\python.exe"></label>
+        <label class="field">Update zip <input type="text" name="update_zip" spellcheck="false" placeholder="Downloads\fsg-dv-sim.zip"></label>
+        <div class="row tight">
+          <label class="field">Dashboard port <input type="number" name="dashboard_port" min="1024" max="65535"></label>
+          <label class="check"><input type="checkbox" name="open_dashboard"> Open the dashboard when it is up</label>
+        </div>
+        <div class="row tight">
+          <button type="submit" class="btn">Save settings</button>
+          <button type="button" class="btn danger" id="btn-quit">Quit launcher</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<!-- ================================================================ vehicle setup page -->
+<main class="setup" id="page-setup" hidden>
+  <section class="panel setup-form" aria-labelledby="vs-h">
+    <div class="panel-head">
+      <h2 id="vs-h">Parameters</h2>
+      <p class="src" id="vs-src"></p>
+      <button type="button" class="btn" id="vs-reload">Re-read MATLAB files</button>
+    </div>
+    <div class="cfg-bar">
+      <label class="field">Saved configuration
+        <select id="vs-config" class="cfg-select"><option value="">LapSim baseline (lr26_params.m)</option></select>
+      </label>
+      <button type="button" class="btn danger" id="vs-delete" disabled>Delete</button>
+      <label class="field grow">Name
+        <input type="text" id="vs-name" maxlength="60" placeholder="e.g. LR26 light 270 kg" autocomplete="off" spellcheck="false">
+      </label>
+      <button type="button" class="btn" id="vs-save">Save</button>
+    </div>
+    <p class="hint">Type a new value to change a parameter; leave it empty to keep the value from <code>lr26_params.m</code>.
+      <code>*1.05</code> scales the baseline value. The setup is used when you press <b>Start simulation</b>.</p>
+    <div id="vs-groups"></div>
+    <label class="field other">Other changes <span class="muted">(separated by spaces; e.g. <code>mu*1.05</code>, <code>c_z+0.3</code>)</span>
+      <textarea id="vs-other" rows="2" spellcheck="false" autocomplete="off"></textarea>
+    </label>
+  </section>
+
+  <aside class="setup-side">
+    <section class="panel" aria-labelledby="vs-next-h">
+      <h2 id="vs-next-h">For the next start</h2>
+      <p class="changes" id="vs-changes-line">No changes: the LapSim baseline.</p>
+      <p class="setup-msg" id="vs-running" hidden></p>
+      <div class="apply-row">
+        <a class="btn primary" href="#sim" id="vs-back">Back to the simulation</a>
+        <button type="button" class="btn" id="vs-clear">Clear all</button>
+      </div>
+      <p class="setup-msg" id="vs-msg" role="status"></p>
+    </section>
+    <section class="panel" aria-labelledby="vs-pred-h">
+      <h2 id="vs-pred-h">LapSim prediction</h2>
+      <div class="veh-summary" id="veh-summary" aria-live="polite"></div>
+      <p class="note">LapSim (Python port of LR26_LapSim, same results): the FSA 2025 tracks and scoring of the competition
+        file with LapSim's driver model. The DV simulation drives its own track layouts.</p>
+    </section>
+    <section class="panel mat-panel" aria-labelledby="vs-mat-h">
+      <h2 id="vs-mat-h">MATLAB</h2>
+      <p class="mat-status" id="vs-mat-status" aria-live="polite">Checking for MATLAB…</p>
+      <div class="apply-row">
+        <button type="button" class="btn primary" id="vs-mat-run" disabled>Run this setup in MATLAB</button>
+        <button type="button" class="btn" id="vs-mat-cancel" hidden>Cancel</button>
+      </div>
+      <h3 class="mt">Results of the last MATLAB run</h3>
+      <div class="file-btns" id="vs-files-results"><span class="muted">None yet: run a setup in MATLAB.</span></div>
+      <h3 class="mt">LapSim files</h3>
+      <div class="file-btns" id="vs-files"></div>
+      <p class="note">Files open on this PC with their Windows program (<code>.m</code> in MATLAB, <code>.csv</code> in Excel),
+        folders in File Explorer. After editing <code>lr26_params.m</code> in MATLAB, press <b>Re-read MATLAB files</b>.</p>
+    </section>
+  </aside>
+</main>
+
+<div class="logview" id="logview" hidden>
+  <div class="logbox" role="dialog" aria-modal="true" aria-labelledby="log-title">
+    <div class="loghead"><h2 id="log-title">Log</h2>
+      <label class="check"><input type="checkbox" id="log-follow" checked> Follow</label>
+      <button type="button" class="btn" id="log-copy">Copy</button>
+      <button type="button" class="btn" id="log-close">Close</button></div>
+    <pre id="log-text"></pre>
+  </div>
+</div>
+
+<footer class="foot">
+  <span class="team"><b>Lions Racing</b> Team · Driverless</span>
+  <span id="ver"></span>
+  <span id="repo"></span>
+  <span id="conn">Connecting…</span>
+</footer>
+<script src="/static/launcher.js"></script>
+</body>
+</html>

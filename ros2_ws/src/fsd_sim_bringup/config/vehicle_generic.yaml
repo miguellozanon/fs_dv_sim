@@ -1,0 +1,52 @@
+# GENERIC vehicle (model: single_track). Use it with `vehicle_file: vehicle_generic.yaml` / --vehicle-file.
+# These are generic values for a Formula Student electric 4WD driverless car.
+# Replace them with your car's data (CAD masses, K&C, tyre tests, coast-down,
+# step-steer tests) to turn the simulator into a digital twin of YOUR car.
+
+name: generic_fs_ev_dv
+mass: 255.0              # [kg] incl. DV hardware, no driver
+yaw_inertia: 110.0       # [kg m^2]
+wheelbase: 1.53          # [m]
+cog_to_front: 0.80       # [m] lf, CoG -> front axle (lr = wheelbase - lf)
+cog_height: 0.28         # [m]
+track_front: 1.22        # [m]
+track_rear: 1.18         # [m]
+wheel_radius: 0.235      # [m]
+rolling_resistance: 0.015
+low_speed_blend: [3.0, 5.0]   # [m/s] kinematic -> dynamic model blend
+usd_path: ""             # optional: your car's USD body for Isaac Sim (visual only); tools/cad_to_usd.py writes it
+usd_wheel_path: ""       # optional: one wheel USD, "{name}" -> fl / fr / rl / rr, centred on the hub
+usd_fill_body: true      # with a USD body: add a simple monocoque tub (CFD models have none)
+usd_fill_hoop: true      # with a USD body: add the main hoop under the camera (the CAD models have none)
+
+aero:
+  rho: 1.225
+  cd_a: 1.25             # drag coefficient x frontal area [m^2]
+  cl_a: 3.6              # downforce coefficient x area [m^2]
+  balance_front: 0.45
+
+tire:                    # simplified Pacejka (lateral); fit B, C, E, mu to TTC data
+  B: 11.0
+  C: 1.45
+  E: 0.3
+  mu: 1.6
+
+drivetrain:
+  drive_split_front: 0.5 # 0 = RWD, 0.5 = even 4WD
+  brake_bias_front: 0.65
+  max_power: 80000.0     # [W]
+
+actuators:
+  max_steer: 0.42        # [rad] road-wheel angle
+  max_steer_rate: 1.5    # [rad/s] steering actuator
+  steer_time_constant: 0.05
+  accel_time_constant: 0.06
+  max_accel: 14.0        # [m/s^2]
+  max_decel: 16.0        # [m/s^2]
+  max_speed: 30.0        # [m/s]
+
+footprint:               # used for cone-hit detection
+  length: 2.95
+  width: 1.45
+  front_overhang: 0.60   # beyond front axle
+  rear_overhang: 0.82    # beyond rear axle

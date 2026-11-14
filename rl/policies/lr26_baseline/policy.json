@@ -1,0 +1,456 @@
+{
+  "name": "lr26_baseline",
+  "spec_hash": "f08c145ec618",
+  "vehicle": "lr26_dv",
+  "changes": [],
+  "perf": {
+    "m": 284.0,
+    "g": 9.81,
+    "lf": 0.85065,
+    "lr": 0.75435,
+    "h_cog": 0.265,
+    "sf": 1.2264,
+    "sr": 1.2264,
+    "e_i": 1.0,
+    "mux": 1.43,
+    "muy": 1.64,
+    "dmux_dFz": -2.28e-05,
+    "dmuy_dFz": -0.000147,
+    "Fz0": 700.0,
+    "tire_exp": 2.0,
+    "util_x": 1.0,
+    "util_y": 1.0,
+    "rho": 1.18,
+    "A": 1.044,
+    "c_w": 1.38,
+    "c_z": 4.15,
+    "aero_eff": 0.8,
+    "aero_bal_f": 0.485,
+    "f_roll": 0.005,
+    "circ_ref": 1.57,
+    "i_trans": 14.5,
+    "T_motor": 38.0,
+    "n_max": 21000.0,
+    "P_max": 80000.0,
+    "P_at_accumulator": 0.0,
+    "eta_g": 0.95,
+    "eta_motor": 0.9,
+    "drive_awd": 0.0,
+    "brake_bias": null,
+    "P_regen": 0.0,
+    "eta_regen": 0.8,
+    "P_max_endurance": 18000.0,
+    "endurance_torque_scale": 1.0,
+    "v_lim": "inf",
+    "ax_max_launch": 7.0,
+    "source": "/home/claude/fsg-dv-sim/lapsim/LR26_LapSim/config/lr26_params.m + competition_fsa2025.m",
+    "events": {
+      "acceleration": {
+        "util_x": 1.0,
+        "util_y": 1.0
+      },
+      "skidpad": {
+        "util_x": 1.0,
+        "util_y": 0.8
+      },
+      "autocross": {
+        "util_x": 0.9,
+        "util_y": 0.8
+      },
+      "endurance": {
+        "util_x": 0.9,
+        "util_y": 0.8
+      }
+    }
+  },
+  "actuators": {
+    "max_accel": 20.0,
+    "max_decel": 25.0
+  },
+  "features_version": 1,
+  "lookahead_m": [
+    0.0,
+    4.0,
+    8.0,
+    14.0,
+    22.0,
+    32.0,
+    45.0,
+    60.0
+  ],
+  "missions": [
+    "acceleration",
+    "skidpad",
+    "autocross"
+  ],
+  "trained": "2026-10-28 09:11",
+  "train_seconds": 1335,
+  "continued_from": "lr26_baseline (earlier runs of this policy)",
+  "algorithm": "imitation (DAgger, 4 rounds) + OpenAI-ES on the output layer: 50 generations, then 25 with the full skidpad, then 30 with corrected cone accounting (16 rollouts per generation, sigma 0.02)",
+  "validation": {
+    "reference": 200.64430406130992,
+    "imitation": 199.02647436988792,
+    "rl": 204.26699864669413,
+    "best_generation": 20,
+    "note": "validation set of the last run (full skidpad): reference 200.6, start of the last run 199.0"
+  },
+  "evaluation": [
+    {
+      "mission": "acceleration",
+      "seed": 0,
+      "reference": {
+        "mission": "acceleration",
+        "seed": 0,
+        "state": "FINISHED",
+        "raw_time": 4.7671689786320774,
+        "final_time": 4.7671689786320774,
+        "cones": 0,
+        "off_course": 0,
+        "lap_times": [
+          4.7671689786320774
+        ],
+        "stopped_in_zone": true
+      },
+      "rl": {
+        "mission": "acceleration",
+        "seed": 0,
+        "state": "FINISHED",
+        "raw_time": 4.555450806984997,
+        "final_time": 4.555450806984997,
+        "cones": 0,
+        "off_course": 0,
+        "lap_times": [
+          4.555450806984997
+        ],
+        "stopped_in_zone": true
+      }
+    },
+    {
+      "mission": "skidpad",
+      "seed": 0,
+      "reference": {
+        "mission": "skidpad",
+        "seed": 0,
+        "state": "FINISHED",
+        "raw_time": 5.49438956323054,
+        "final_time": 5.49438956323054,
+        "cones": 0,
+        "off_course": 0,
+        "lap_times": [
+          5.467526524174154,
+          5.494429049288341,
+          5.4944927974727875,
+          5.49435007717274
+        ],
+        "stopped_in_zone": true
+      },
+      "rl": {
+        "mission": "skidpad",
+        "seed": 0,
+        "state": "FINISHED",
+        "raw_time": 5.51225485340187,
+        "final_time": 5.51225485340187,
+        "cones": 0,
+        "off_course": 0,
+        "lap_times": [
+          5.4350837600802056,
+          5.44556822572933,
+          5.233880334710264,
+          5.578941481074409
+        ],
+        "stopped_in_zone": true
+      }
+    },
+    {
+      "mission": "autocross",
+      "seed": 7,
+      "reference": {
+        "mission": "autocross",
+        "seed": 7,
+        "state": "FINISHED",
+        "raw_time": 20.28607910688274,
+        "final_time": 20.28607910688274,
+        "cones": 0,
+        "off_course": 0,
+        "lap_times": [
+          20.28607910688274
+        ],
+        "stopped_in_zone": null
+      },
+      "rl": {
+        "mission": "autocross",
+        "seed": 7,
+        "state": "FINISHED",
+        "raw_time": 19.967978440577937,
+        "final_time": 19.967978440577937,
+        "cones": 0,
+        "off_course": 0,
+        "lap_times": [
+          19.967978440577937
+        ],
+        "stopped_in_zone": null
+      }
+    },
+    {
+      "mission": "autocross",
+      "seed": 11,
+      "reference": {
+        "mission": "autocross",
+        "seed": 11,
+        "state": "FINISHED",
+        "raw_time": 20.842141377622593,
+        "final_time": 20.842141377622593,
+        "cones": 0,
+        "off_course": 0,
+        "lap_times": [
+          20.842141377622593
+        ],
+        "stopped_in_zone": null
+      },
+      "rl": {
+        "mission": "autocross",
+        "seed": 11,
+        "state": "FINISHED",
+        "raw_time": 20.397771625944088,
+        "final_time": 20.397771625944088,
+        "cones": 0,
+        "off_course": 0,
+        "lap_times": [
+          20.397771625944088
+        ],
+        "stopped_in_zone": null
+      }
+    },
+    {
+      "mission": "autocross",
+      "seed": 23,
+      "reference": {
+        "mission": "autocross",
+        "seed": 23,
+        "state": "FINISHED",
+        "raw_time": 20.279320146267537,
+        "final_time": 24.279320146267537,
+        "cones": 2,
+        "off_course": 0,
+        "lap_times": [
+          20.279320146267537
+        ],
+        "stopped_in_zone": null
+      },
+      "rl": {
+        "mission": "autocross",
+        "seed": 23,
+        "state": "FINISHED",
+        "raw_time": 19.774947747671064,
+        "final_time": 19.774947747671064,
+        "cones": 0,
+        "off_course": 0,
+        "lap_times": [
+          19.774947747671064
+        ],
+        "stopped_in_zone": null
+      }
+    }
+  ],
+  "history": [
+    {
+      "generation": 0,
+      "train": null,
+      "val": 199.02647436988792,
+      "ref": 200.64430406130992,
+      "time": 0.0
+    },
+    {
+      "generation": 1,
+      "train": 938.8211148497406,
+      "train_best": 1077.7133575934295,
+      "time": 54.4
+    },
+    {
+      "generation": 2,
+      "train": 998.8311082199284,
+      "train_best": 1064.8226883938908,
+      "time": 97.4
+    },
+    {
+      "generation": 3,
+      "train": 942.2278625807508,
+      "train_best": 1050.4501556405178,
+      "time": 139.2
+    },
+    {
+      "generation": 4,
+      "train": 1054.4007577010939,
+      "train_best": 1099.5923848768316,
+      "time": 182.3
+    },
+    {
+      "generation": 5,
+      "train": 1034.0962511078628,
+      "train_best": 1078.2949487617102,
+      "time": 225.3,
+      "val": 200.78568246235562
+    },
+    {
+      "generation": 6,
+      "train": 905.3485860823557,
+      "train_best": 1026.8202425815384,
+      "time": 274.2
+    },
+    {
+      "generation": 7,
+      "train": 989.6709786715386,
+      "train_best": 1042.9698726911167,
+      "time": 317.5
+    },
+    {
+      "generation": 8,
+      "train": 926.6654931326523,
+      "train_best": 1051.8293581230269,
+      "time": 362.1
+    },
+    {
+      "generation": 9,
+      "train": 1029.3918048489013,
+      "train_best": 1098.1858674863295,
+      "time": 403.9
+    },
+    {
+      "generation": 10,
+      "train": 920.8822328357872,
+      "train_best": 1042.109349022937,
+      "time": 445.1,
+      "val": 201.7814818814262
+    },
+    {
+      "generation": 11,
+      "train": 970.4095162386345,
+      "train_best": 1076.3299057798718,
+      "time": 492.7
+    },
+    {
+      "generation": 12,
+      "train": 902.8474169344481,
+      "train_best": 1029.5516814182165,
+      "time": 533.9
+    },
+    {
+      "generation": 13,
+      "train": 974.6477570789627,
+      "train_best": 1053.0234688290154,
+      "time": 577.0
+    },
+    {
+      "generation": 14,
+      "train": 1073.1314547460743,
+      "train_best": 1128.2248856314732,
+      "time": 621.1
+    },
+    {
+      "generation": 15,
+      "train": 1097.0412573243157,
+      "train_best": 1138.0761759062023,
+      "time": 664.4,
+      "val": 202.67444226244908
+    },
+    {
+      "generation": 16,
+      "train": 1054.6231423948961,
+      "train_best": 1122.7930976460566,
+      "time": 713.8
+    },
+    {
+      "generation": 17,
+      "train": 998.4273478998302,
+      "train_best": 1067.3732591768658,
+      "time": 756.7
+    },
+    {
+      "generation": 18,
+      "train": 1005.3172574142668,
+      "train_best": 1049.725760796338,
+      "time": 799.7
+    },
+    {
+      "generation": 19,
+      "train": 905.6849424638742,
+      "train_best": 1078.7190603040742,
+      "time": 841.6
+    },
+    {
+      "generation": 20,
+      "train": 895.6169840975647,
+      "train_best": 1065.4163537017953,
+      "time": 881.8,
+      "val": 204.26699864669413
+    },
+    {
+      "generation": 21,
+      "train": 899.0731290279862,
+      "train_best": 1114.0801002694013,
+      "time": 926.9
+    },
+    {
+      "generation": 22,
+      "train": 953.3041717125857,
+      "train_best": 1107.5557896365567,
+      "time": 969.0
+    },
+    {
+      "generation": 23,
+      "train": 1028.1342077387085,
+      "train_best": 1090.9747630854154,
+      "time": 1013.6
+    },
+    {
+      "generation": 24,
+      "train": 1025.171848637272,
+      "train_best": 1063.8574903703538,
+      "time": 1056.1
+    },
+    {
+      "generation": 25,
+      "train": 1050.5924363795534,
+      "train_best": 1114.6970322024395,
+      "time": 1099.4,
+      "val": 202.16988557164825
+    },
+    {
+      "generation": 26,
+      "train": 842.4829844648759,
+      "train_best": 1007.7427989983927,
+      "time": 1145.1
+    },
+    {
+      "generation": 27,
+      "train": 987.7737289228601,
+      "train_best": 1076.3531063563385,
+      "time": 1187.1
+    },
+    {
+      "generation": 28,
+      "train": 923.4438051164602,
+      "train_best": 1071.9739347612933,
+      "time": 1228.4
+    },
+    {
+      "generation": 29,
+      "train": 1021.9508968849254,
+      "train_best": 1064.0926938042053,
+      "time": 1272.3
+    },
+    {
+      "generation": 30,
+      "train": 1072.0464513046522,
+      "train_best": 1107.3061652976082,
+      "time": 1316.0,
+      "val": 201.52325584960465
+    }
+  ],
+  "sizes": [
+    26,
+    32,
+    32,
+    1
+  ]
+}

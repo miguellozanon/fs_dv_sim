@@ -1,0 +1,9 @@
+{
+  "name": "LionsLTS LR26 actual aero",
+  "changes": [
+    "c_w=1.44",
+    "c_z=4.14"
+  ],
+  "notes": "The 'actual LR26' aero values in the comments of LionsLTS inputs/vehicles/LR26.yml (c_w 1.44, c_z 4.14, a 1.044) instead of the LR26 goals (1.38, 4.15) of lr26_params.m.",
+  "saved": "2026-11-04 10:03"
+}

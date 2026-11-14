@@ -1,0 +1,82 @@
+# lf:                           [m] x distance front axle to center of gravity
+# lr:                           [m] x distance rear axle to center of gravity
+# h_cog:                        [m] height of center of gravity
+# sf:                           [m] track width front
+# sr:                           [m] track width rear
+# m:                            [kg] vehicle mass inlcuding driver excluding fuel (FE minimum 880kg)
+# f_roll:                       [-] rolling resistance coefficient
+# c_w_a:                        [m^2] c_w * A_car -> air resistance calculation
+# c_z_a_f:                      [m^2] c_z_f * A_frontwing
+# c_z_a_r:                      [m^2] c_z_r * A_rearwing
+# g:                            [m/s^2]
+# rho_air:                      [kg/m^3] air density
+# drs_factor:                   [-] part of reduction of air resistance by DRS
+
+# topology:                     [-] RWD or AWD or FWD
+# pow_e_motor:                  [W] total electric motor power (after efficiency losses)
+# eta_e_motor:                  [-] efficiency electric motor (drive)
+# eta_e_motor_re:               [-] efficiency electric motor (recuperation)
+# torque_e_motor_max:           [Nm] maximum torque of electric motor (after efficiency losses)
+
+# keep attention on the direction of the values, i.e. i_trans is from tire to engine!
+# i_trans:                      [-] gear ratio
+# n_shift:                      [1/min] shift rpm
+# e_i:                          [-] torsional mass factor
+# eta_g:                        [-] efficiency of gearbox/transmission
+
+# tire data should be normalized to mu = 1.0 (coefficient of friction of the track / tire test bench)
+# circ_ref:                     [m] loaded reference circumreference
+# fz_0:                         [N] nominal tire load
+# mux:                          [-] corresponds to the coefficient of friction at nominal tire load (fz == fz_0)
+# muy:                          [-] corresponds to the coefficient of friction at nominal tire load (fz == fz_0)
+# dmux_dfz:                     [-] reduction of force potential with rising tire load (fz > fz_0) -> negative value!
+# dmuy_dfz:                     [-] reduction of force potential with rising tire load (fz > fz_0) -> negative value!
+# tire_model_exp:               [-] exponent used in the tire model to adjust shape of friction "circle" -> [1.0, 2.0]
+
+general:
+  lf: 0.85065
+  lr: 0.75435
+  h_cog: 0.265
+  sf: 1.2264
+  sr: 1.2264
+  m: 290
+  f_roll: 0.005
+  c_w_a: 1.478 # 1.38 * 1.071
+  c_z_a_f: 1.785 # 3.93 * 1.071 * 0.53 * 0.8, positive means downforce
+  c_z_a_r: 1.583 # 3.93 * 1.071 * 0.47 * 0.8
+  g: 9.81
+  rho_air: 1.18 # 1013hPa and 25°C
+  drs_factor: 0.0
+  ax_max: 7
+
+engine:
+  powertrain_type: "electric"
+  topology: "RWD" # RWD or AWD (FWD not working), if AWD increase torque_e_motor_max
+  pow_e_motor: 80000
+  eta_e_motor: 0.9
+  eta_e_motor_re: 0.8
+  torque_e_motor_max: 200 # increase for AWD
+  recutorque_e_motor_max: 20 # maximum recuperation torque of electric motor, increase for AWD
+
+gearbox:
+  i_trans: [5]
+  n_shift: [8000.0] # max engine speed in [1/min]
+  e_i: [1.0]
+  eta_g: 0.95
+
+tires:
+  f:
+    circ_ref: 1.5651 # 0.2491m * pi * 2
+    fz_0: 700 # ~ 290kg * 9.81 / 4
+    mux: 1.43
+    muy: 1.64
+    dmux_dfz: -2.28e-5
+    dmuy_dfz: -1.47e-4
+  r:
+    circ_ref: 1.5651
+    fz_0: 700
+    mux: 1.43
+    muy: 1.64
+    dmux_dfz: -2.28e-5
+    dmuy_dfz: -1.47e-4
+  tire_model_exp: 2.0

@@ -1,0 +1,7 @@
+Bebas Neue (bebas-neue.woff2, latin subset, as served by lionsracing.de)
+Copyright (c) 2010 Dharma Type (Ryoichi Tsunekawa).
+Licensed under the SIL Open Font License, Version 1.1: https://openfontlicense.org
+The font may be used, bundled and redistributed with software; it must not be sold on its own.
+
+lions-logo.png, favicon.png, apple-touch-icon.png: the Lions Racing Team logo, for the team's own
+tools. It belongs to the team and is not covered by the project's MIT licence.

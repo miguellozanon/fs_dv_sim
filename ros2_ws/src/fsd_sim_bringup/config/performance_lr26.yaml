@@ -1,0 +1,47 @@
+# LR26 Performance parameters (LapSim names), used by fsdsim.perf and by vehicle.yaml
+# (imported from lr26_params.m + competition_fsa2025.m). Regenerate with tools/import_lapsim_params.py.
+m: 284.0
+g: 9.81
+lf: 0.85065
+lr: 0.75435
+h_cog: 0.265
+sf: 1.2264
+sr: 1.2264
+e_i: 1.0
+mux: 1.43
+muy: 1.64
+dmux_dFz: -2.28e-05
+dmuy_dFz: -0.000147
+Fz0: 700.0
+tire_exp: 2.0
+util_x: 1.0
+util_y: 1.0
+rho: 1.18
+A: 1.044
+c_w: 1.38
+c_z: 4.15
+aero_eff: 0.8
+aero_bal_f: 0.485
+f_roll: 0.005
+circ_ref: 1.57
+i_trans: 14.5
+T_motor: 38.0
+n_max: 21000.0
+P_max: 80000.0
+P_at_accumulator: 0.0
+eta_g: 0.95
+eta_motor: 0.9
+drive_awd: 0.0
+brake_bias: null
+P_regen: 0.0
+eta_regen: 0.8
+P_max_endurance: 18000.0
+endurance_torque_scale: 1.0
+v_lim: inf
+ax_max_launch: 7.0
+source: imported from lr26_params.m + competition_fsa2025.m
+events:
+  acceleration: {util_x: 1.0, util_y: 1.0}
+  skidpad: {util_x: 1.0, util_y: 0.8}
+  autocross: {util_x: 0.9, util_y: 0.8}
+  endurance: {util_x: 0.9, util_y: 0.8}

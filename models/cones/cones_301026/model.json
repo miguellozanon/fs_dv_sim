@@ -1,0 +1,53 @@
+{
+  "names": [
+    "blue_cone",
+    "yellow_cone",
+    "orange_cone",
+    "large_orange_cone"
+  ],
+  "imgsz": [
+    384,
+    640
+  ],
+  "trained": "2026-10-30 22:04",
+  "base_model": "yolo11n.pt",
+  "epochs": 60,
+  "train_imgsz": 640,
+  "images": 888,
+  "train_images": 763,
+  "val_images": 125,
+  "sessions": [
+    "isaac_trackdrive_20261030-214040"
+  ],
+  "train_boxes": {
+    "blue_cone": 2628,
+    "yellow_cone": 1463,
+    "orange_cone": 0,
+    "large_orange_cone": 150
+  },
+  "metrics": {
+    "mAP50": 0.6334,
+    "mAP50_95": 0.2908,
+    "precision": 0.6427,
+    "recall": 0.6449,
+    "classes": {
+      "blue_cone": {
+        "precision": 0.6862,
+        "recall": 0.7086,
+        "mAP50": 0.7028
+      },
+      "yellow_cone": {
+        "precision": 0.5932,
+        "recall": 0.5695,
+        "mAP50": 0.5572
+      },
+      "large_orange_cone": {
+        "precision": 0.6487,
+        "recall": 0.6565,
+        "mAP50": 0.6401
+      }
+    }
+  },
+  "train_minutes": 9.1,
+  "software": "Ultralytics YOLO (AGPL-3.0)"
+}

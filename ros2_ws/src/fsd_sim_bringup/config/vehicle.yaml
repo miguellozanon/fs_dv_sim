@@ -1,0 +1,94 @@
+# LR26 driverless simulation vehicle.
+#
+# model: performance -> tyre, aero, powertrain and brake limits come from the Performance
+# department's LapSim model (fsdsim.perf). The parameters are read straight from the MATLAB
+# code in lapsim/LR26_LapSim (config/lr26_params.m and config/competition_fsa2025.m), so
+# changing a value there changes it for the simulator too (next start, or "Reload" in the
+# dashboard's Vehicle setup page). Mass, axle positions, CoG height, track widths and wheel
+# radius follow those values, so the lap time simulation and this simulator share one car.
+#
+# Change parameters for a run without editing files:
+#   dashboard -> Vehicle setup                                   (LapSim + MATLAB + simulation)
+#   tools/param_study.py --param m --values 260,284,310          (sweeps, sim vs LapSim)
+#   lite.launch.py vehicle_set:="m=300 mux*1.05"                  (ROS lite backend)
+#   run_isaac.ps1 -Set "m=300","c_z=4.5"                          (Isaac Sim)
+# Names: any LapSim field (m, mux, muy, c_z, c_w, i_trans, T_motor, P_max, h_cog, aero_bal_f,
+# brake_bias, ...), the lts_set_param aliases (mu, mass, gear, cd, cl, cog, power, cop, torque),
+# or a field of this file (yaml path, e.g. yaw_inertia=120, actuators.max_steer=0.4).
+# Forms: name=value, name*factor, name+delta, name-delta.
+
+name: lr26_dv
+model: performance
+performance_source: lapsim                    # <repo>/lapsim/LR26_LapSim (or $FSG_LAPSIM_DIR)
+performance_file: performance_lr26.yaml       # fallback copy if the MATLAB folder is not found
+# Applied on top of the LapSim values, e.g. the DV car without a driver but with the
+# DV hardware: ["m-75", "m+20"]. LapSim's m = 284 kg includes the driver.
+performance_changes: []
+
+# Not in LapSim (quasi-steady state), needed by the dynamic model:
+yaw_inertia: 120.0       # [kg m^2]
+rolling_resistance: 0.015    # single_track mode only (performance mode uses f_roll)
+low_speed_blend: [3.0, 5.0]  # [m/s] kinematic -> dynamic model blend
+usd_path: "assets/lr26/lr26_body.usda"      # optional: your car's USD body for Isaac Sim (visual only); tools/cad_to_usd.py writes it
+usd_wheel_path: "assets/lr26/lr26_wheel_{name}.usda"      # optional: one wheel USD, "{name}" -> fl / fr / rl / rr, centred on the hub
+usd_fill_body: false      # with a USD body: add a simple monocoque tub (CFD models have none)
+usd_fill_hoop: true      # with a USD body: add the main hoop under the camera (the CAD models have none)
+
+# Body on its suspension, wheel slip, handling model (fsdsim.chassis). TYPICAL FS VALUES, NOT MEASURED ON THE LR26:
+# ask the vehicle dynamics department for roll / pitch gradients and wheel rates. None of it changes lap times
+# with handling: single_track (the grip-relevant load transfer is in the LapSim wheel loads already).
+chassis:
+  attitude: true              # roll / pitch / heave: tilts LiDAR, ZED and IMU as on the car
+  roll_gradient_deg_g: 0.7    # [deg/g]
+  pitch_gradient_deg_g: 0.45  # [deg/g]
+  wheel_rate_front: 45000.0   # [N/m] per wheel
+  wheel_rate_rear: 50000.0
+  roll_freq_hz: 3.2
+  pitch_freq_hz: 3.6
+  heave_freq_hz: 3.4
+  damping_ratio: 0.65
+  wheel_slip: true            # wheel-speed sensors include drive / brake slip
+  slip_B: 12.0
+  slip_C: 1.5
+  handling: single_track      # single_track (LapSim axle forces) | double_track (force and slip angle per wheel)
+
+# Overwritten from performance_lr26.yaml in performance mode (kept for reference / single_track):
+mass: 284.0
+wheelbase: 1.53
+cog_to_front: 0.81
+cog_height: 0.265
+track_front: 1.24
+track_rear: 1.20
+wheel_radius: 0.207
+
+tire:                    # performance mode: only the SHAPE of the lateral force vs slip angle
+  B: 11.0                # (peak = axle potential from LapSim's load-sensitive mu)
+  C: 1.45
+  E: 0.3
+  mu: 1.6                # single_track mode only
+
+aero:                    # single_track mode only (performance mode: c_w, c_z, A, aero_eff, aero_bal_f)
+  rho: 1.225
+  cd_a: 1.12
+  cl_a: 3.32
+  balance_front: 0.485
+
+drivetrain:              # single_track mode only (performance mode: LapSim powertrain / brake_bias)
+  drive_split_front: 0.0
+  brake_bias_front: 0.65
+  max_power: 80000.0
+
+actuators:
+  max_steer: 0.42        # [rad] road-wheel angle
+  max_steer_rate: 1.5    # [rad/s] steering actuator
+  steer_time_constant: 0.05
+  accel_time_constant: 0.06
+  max_accel: 20.0        # [m/s^2] request limit (the car's real limit comes from the model)
+  max_decel: 25.0        # [m/s^2]
+  max_speed: 30.0        # [m/s] raised automatically to the powertrain top speed
+
+footprint:               # used for cone-hit detection; from the LR26 CAD (wing tips, 4 Nov 2026): tools/cad_inspect.py
+  length: 3.065          # front wing tip -> rear wing
+  width: 1.48            # front wing
+  front_overhang: 0.956  # beyond front axle (was 0.60)
+  rear_overhang: 0.504   # beyond rear axle (was 0.82)

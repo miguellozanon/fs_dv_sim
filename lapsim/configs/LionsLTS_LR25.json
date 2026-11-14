@@ -1,0 +1,11 @@
+{
+  "name": "LionsLTS LR25",
+  "changes": [
+    "m=294",
+    "c_z=4",
+    "A=1.07",
+    "P_max=72000"
+  ],
+  "notes": "From LionsLTS LR25.yml; aero_eff 0.8 scales drag as well as downforce in LapSim, only downforce in LionsLTS",
+  "saved": "2026-11-04 10:03"
+}

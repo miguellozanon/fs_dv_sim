@@ -1,0 +1,13 @@
+{
+  "name": "LionsLTS LR26 as committed",
+  "changes": [
+    "m=270",
+    "c_w=0.76",
+    "c_z=-0.4",
+    "A=0.657",
+    "drive_awd=1",
+    "P_max=72000"
+  ],
+  "notes": "WHAT-IF, not the car: LR26.yml as committed in LionsLTS (270 kg, AWD, 72 kW, almost no aero: c_z_a = -0.4*0.657). Compare with 'LionsLTS LR26 actual aero'. From LionsLTS LR26.yml; aero_eff 0.8 scales drag as well as downforce in LapSim, only downforce in LionsLTS; AWD: LapSim puts an identical motor set on the front axle; check that torque_e_motor_max means the same in the LionsLTS file",
+  "saved": "2026-11-04 10:03"
+}

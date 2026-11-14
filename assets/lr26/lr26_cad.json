@@ -1,0 +1,55 @@
+{
+  "frame": {
+    "unit_scale": 0.01,
+    "front_axle_x": 0.0,
+    "x_rearward": true,
+    "lf": 0.85065
+  },
+  "files": [
+    "Assem1.obj"
+  ],
+  "bounds_lo": [
+    -1.2584,
+    -0.74,
+    -0.0074
+  ],
+  "bounds_hi": [
+    1.8056,
+    0.74,
+    1.0888
+  ],
+  "outputs": {
+    "body": {
+      "parts": 680,
+      "triangles": 420211
+    },
+    "wheel_fl": {
+      "parts": 1,
+      "triangles": 1258
+    },
+    "wheel_fr": {
+      "parts": 1,
+      "triangles": 1258
+    },
+    "wheel_rl": {
+      "parts": 1,
+      "triangles": 1258
+    },
+    "wheel_rr": {
+      "parts": 1,
+      "triangles": 1258
+    }
+  },
+  "sensor_vertices_within_12cm": {
+    "lidar": 197,
+    "zed": 0
+  },
+  "lidar_mount_z": {
+    "old": 0.22,
+    "new": 0.565
+  },
+  "sensor_vertices_within_6cm_after_move": {
+    "lidar": 0,
+    "zed": 0
+  }
+}

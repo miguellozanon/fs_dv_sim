@@ -1,0 +1,51 @@
+% Shared preamble of the two technical papers (docs/paper). Compile with latexmk -pdf <paper>.tex
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=25mm,headheight=14pt]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{graphicx}
+\usepackage{booktabs,tabularx,multirow}
+\usepackage[detect-all,per-mode=symbol]{siunitx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,shapes.geometric,backgrounds}
+\usepackage{caption,subcaption}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{authblk}
+\usepackage{fancyhdr}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+
+\definecolor{lrred}{HTML}{C8102E}
+\definecolor{cA}{HTML}{2A78D6}
+\definecolor{cB}{HTML}{EB6834}
+\definecolor{cC}{HTML}{1BAF7A}
+\definecolor{boxbg}{HTML}{F3F4F6}
+
+\captionsetup{font=small,labelfont=bf,margin=4pt}
+\setlist{itemsep=2pt,topsep=3pt}
+\sisetup{group-minimum-digits=4}
+\numberwithin{equation}{section}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.3pt}
+\fancyfoot[C]{\thepage}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\vect}[1]{\bm{#1}}
+\renewcommand{\Affilfont}{\small\itshape}
+
+% TikZ styles for the block diagrams
+\tikzset{
+  blk/.style={draw=black!60, fill=boxbg, rounded corners=2pt, align=center, font=\footnotesize, inner sep=4pt, minimum height=8mm},
+  grp/.style={draw=black!35, dashed, rounded corners=3pt, inner sep=5pt},
+  grplab/.style={font=\scriptsize\itshape, text=black!60},
+  arr/.style={-{Stealth[length=2mm]}, semithick, black!70},
+  darr/.style={{Stealth[length=2mm]}-{Stealth[length=2mm]}, semithick, black!70},
+}

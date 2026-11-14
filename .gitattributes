@@ -1,0 +1,9 @@
+# Keep Unix line endings for files WSL runs, Windows ones for batch files (git on Windows).
+*.sh    text eol=lf
+*.py    text eol=lf
+*.yaml  text eol=lf
+*.launch.py text eol=lf
+*.bat   text eol=crlf
+*.png   binary
+*.npz   binary
+*.woff2 binary

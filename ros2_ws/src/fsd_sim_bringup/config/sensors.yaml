@@ -1,0 +1,88 @@
+# Sensor suite. Mount poses are relative to base_link = CoG projected to the
+# ground, ROS convention (x forward, y left, z up, angles in rad).
+# The same file drives: the analytic sensor models (lite backend), the Isaac
+# Sim sensor prims, and the static TF tree published by the launch files.
+
+base_frame: base_link
+map_frame: map
+
+lidar:
+  enabled: true
+  model: ouster_os1_64
+  frame_id: os_lidar
+  topic: /lidar/points
+  mount: {x: 1.55, y: 0.0, z: 0.565, roll: 0.0, pitch: 0.0, yaw: 0.0}   # on top of the nose (LR26 CAD; was z 0.22 inside the nose shell)
+  channels: 64
+  vertical_fov_deg: [-22.5, 22.5]   # OS1 uniform beam spacing; check your unit's beam_altitude_angles
+  horizontal_resolution: 1024       # 512 | 1024 | 2048
+  rate_hz: 10.0                     # 10 | 20
+  min_range: 0.5
+  max_range: 120.0
+  max_cone_range: 60.0
+  range_noise_std: 0.015
+  dropout_prob: 0.01
+  motion_distortion: true
+  isaac:
+    config: OS1
+    variant: auto                   # or an exact variant, e.g. OS1_REV7_128ch10hz1024res
+    aux_output_level: FULL
+    yaw_offset_deg: 0.0
+    publish_metadata: [emitter_id, timestamp]
+    frame_lag: 2                    # rendered frames between the car pose of a scan and its readout (as camera.isaac_frame_lag);
+                                    # check with the dashboard's "LiDAR timing" (perception lidar / fusion, ground truth on)
+
+camera:
+  enabled: true
+  model: zed2i
+  namespace: /zed/zed_node          # same topic layout as the ZED ROS 2 wrapper
+  frame_prefix: zed
+  mount: {x: -0.35, y: 0.0, z: 1.15, roll: 0.0, pitch: 0.12, yaw: 0.0}   # main hoop, tilted down
+  baseline: 0.12
+  resolution: [1280, 720]
+  rate_hz: 15.0
+  hfov_deg: 110.0
+  focal_length_mm: 2.12
+  min_depth: 0.3
+  max_depth: 20.0
+  disparity_noise_px: 0.15
+  detection_max_range: 18.0
+  detections_topic: /zed/detections
+  isaac_mode: native                # native | stereolabs_extension
+  isaac_frame_lag: 2                # Isaac returns a camera image 2 rendered frames after the frame it shows:
+                                    # images are stamped with the time they show (else labels / 3D cones lag)
+
+imu:
+  enabled: true
+  model: generic_mems_ins
+  frame_id: imu_link
+  topic: /imu/data
+  mount: {x: 0.0, y: 0.0, z: 0.25, roll: 0.0, pitch: 0.0, yaw: 0.0}
+  rate_hz: 200.0
+  gyro_noise_density: 1.2e-4        # [rad/s/sqrt(Hz)]
+  gyro_bias_random_walk: 1.0e-5
+  accel_noise_density: 6.0e-4       # [m/s^2/sqrt(Hz)]
+  accel_bias_random_walk: 1.0e-4
+  provide_orientation: true
+  orientation_noise_std: 0.005
+
+gnss:
+  enabled: true
+  model: rtk_gnss
+  frame_id: gnss_link
+  topic: /gnss/fix
+  velocity_topic: /gnss/vel
+  mount: {x: -0.20, y: 0.0, z: 1.25, roll: 0.0, pitch: 0.0, yaw: 0.0}
+  rate_hz: 10.0
+  horizontal_std: 0.02              # RTK fixed; ~1.5 for single-point GNSS
+  vertical_std: 0.04
+  velocity_std: 0.03
+  origin: {lat: 49.3278, lon: 8.5658, alt: 105.0}   # approx. Hockenheimring (placeholder)
+
+vehicle_sensors:
+  enabled: true
+  topic: /vehicle/sensors
+  rate_hz: 100.0
+  wheel_rpm_noise_std: 2.0
+  steering_noise_std: 0.002
+  ground_speed_enabled: true        # optical ground-speed sensor
+  ground_speed_noise_std: 0.02

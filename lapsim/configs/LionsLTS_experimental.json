@@ -1,0 +1,16 @@
+{
+  "name": "LionsLTS experimental",
+  "changes": [
+    "h_cog=0.24",
+    "m=240",
+    "c_w=1.436781609",
+    "c_z=5.986590038",
+    "aero_bal_f=0.4",
+    "drive_awd=1",
+    "eta_motor=0.95",
+    "T_motor=80",
+    "i_trans=18.5"
+  ],
+  "notes": "From LionsLTS experimental.yml; aero areas c_w_a / c_z_a_f / c_z_a_r converted with the LapSim aero_eff 0.8 (drag area kept; LionsLTS applies the efficiency factor to downforce only); AWD: LapSim puts an identical motor set on the front axle; check that torque_e_motor_max means the same in the LionsLTS file",
+  "saved": "2026-11-04 10:03"
+}

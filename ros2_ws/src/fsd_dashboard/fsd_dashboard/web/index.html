@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lions Racing · DV Simulator</title>
+<meta name="theme-color" content="#0c1118">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="brand">
+  <a class="brand-id" href="#live" aria-label="Lions Racing Team, DV simulator: live run">
+    <img src="lions-logo.png" alt="Lions Racing Team" width="480" height="179">
+    <span class="brand-app">DV Simulator</span>
+  </a>
+  <nav class="tabs" aria-label="Pages">
+    <a href="#live" id="tab-live" aria-current="page">Live run</a>
+    <a href="#setup" id="tab-setup">Vehicle setup</a>
+  </nav>
+</header>
+
+<section class="assi" id="assi" data-state="none" aria-live="polite">
+  <div class="assi-lamp" id="lamp" role="img" aria-label="ASSI off"><span></span></div>
+  <div class="assi-state">
+    <h1 id="state-word">Waiting</h1>
+    <p id="state-detail">Connecting to the dashboard server</p>
+  </div>
+  <dl class="run">
+    <div><dt>Mission</dt><dd id="run-mission">–</dd></div>
+    <div><dt>Lap</dt><dd id="run-lap">–</dd></div>
+    <div><dt>Mission time</dt><dd id="run-time">–</dd></div>
+    <div><dt>Penalties</dt><dd id="run-penalty">–</dd></div>
+  </dl>
+</section>
+
+<nav class="controls" aria-label="Autonomous system controls">
+  <label class="mission-pick">Mission
+    <select id="mission-select">
+      <option value="acceleration">Acceleration</option>
+      <option value="skidpad">Skidpad</option>
+      <option value="autocross">Autocross</option>
+      <option value="trackdrive" selected>Trackdrive</option>
+      <option value="ebs_test">EBS test</option>
+      <option value="inspection">Inspection</option>
+    </select>
+  </label>
+  <button type="button" data-cmd="select_mission">Select mission</button>
+  <button type="button" data-cmd="activate">Activate</button>
+  <button type="button" data-cmd="go" class="go">Go</button>
+  <button type="button" data-cmd="reset">Reset simulation</button>
+  <button type="button" data-cmd="emergency" class="estop">Emergency stop</button>
+  <p class="controls-msg" id="controls-msg" role="status"></p>
+</nav>
+
+<main class="grid" id="page-live">
+  <section class="panel map-panel" aria-labelledby="map-h">
+    <div class="panel-head">
+      <h2 id="map-h">Track</h2>
+      <div class="seg" role="group" aria-label="Map view">
+        <button type="button" data-view="track" aria-pressed="true">Whole track</button>
+        <button type="button" data-view="follow" aria-pressed="false">Follow car</button>
+      </div>
+      <label class="check"><input type="checkbox" id="show-lidar" checked> LiDAR</label>
+    </div>
+    <div class="map-wrap">
+      <canvas id="map" aria-label="Top-down track map with cones, the car, its driven path and LiDAR returns"></canvas>
+      <p class="empty" id="map-empty">The track appears when a simulator connects.</p>
+    </div>
+    <p class="cam-meta" id="map-meta" hidden></p>
+    <ul class="legend" aria-label="Map legend">
+      <li><i class="sw cone-blue"></i>Blue cone</li>
+      <li><i class="sw cone-yellow"></i>Yellow cone</li>
+      <li><i class="sw cone-orange"></i>Orange cone</li>
+      <li><i class="sw cone-down"></i>Knocked cone</li>
+      <li><i class="sw lidar-obj"></i>LiDAR object return</li>
+      <li><i class="sw lidar-ground"></i>LiDAR ground return</li>
+      <li><i class="sw path"></i>Driven path</li>
+    </ul>
+  </section>
+
+  <section class="panel camera-panel" aria-labelledby="cam-h">
+    <div class="panel-head">
+      <h2 id="cam-h">ZED camera</h2>
+      <div class="seg" role="group" aria-label="Camera stream">
+        <button type="button" data-cam="left" aria-pressed="true">Colour</button>
+        <button type="button" data-cam="depth" aria-pressed="false">Depth</button>
+      </div>
+    </div>
+    <div class="cam-wrap">
+      <img id="cam" alt="Latest ZED camera frame" hidden>
+      <svg id="cam-boxes" class="cam-boxes" aria-hidden="true" preserveAspectRatio="xMidYMid meet"></svg>
+      <p class="empty" id="cam-empty">No camera stream. Rendered images come from Isaac Sim; the lite simulator only publishes cone detections.</p>
+    </div>
+    <p class="cam-meta" id="cam-meta"></p>
+    <p class="cam-meta yolo-meta" id="yolo-meta" hidden></p>
+  </section>
+
+  <section class="panel vitals" aria-labelledby="vit-h">
+    <h2 id="vit-h" class="sr-only">Vehicle</h2>
+    <div class="speed">
+      <span class="speed-num" id="v-speed">–</span>
+      <span class="speed-unit">km/h</span>
+    </div>
+    <dl class="vit-list">
+      <div><dt>Steering</dt><dd><span id="v-steer">–</span><span class="steer-bar"><i id="v-steer-bar"></i></span></dd></div>
+      <div><dt>Lateral accel.</dt><dd id="v-ay">–</dd></div>
+      <div><dt>Yaw rate</dt><dd id="v-r">–</dd></div>
+    </dl>
+    <figure class="wheels" aria-label="Wheel speeds">
+      <figcaption>Wheel speeds (rpm)</figcaption>
+      <div class="car-outline">
+        <span id="w-fl" title="Front left">–</span><span id="w-fr" title="Front right">–</span>
+        <span id="w-rl" title="Rear left">–</span><span id="w-rr" title="Rear right">–</span>
+      </div>
+    </figure>
+  </section>
+
+  <section class="panel charts" aria-labelledby="ch-h">
+    <div class="panel-head">
+      <h2 id="ch-h">Telemetry, last 30 s</h2>
+    </div>
+    <div class="chart" data-chart="speed">
+      <div class="chart-head"><h3>Speed</h3><span class="unit">km/h</span></div>
+      <canvas></canvas>
+    </div>
+    <div class="chart" data-chart="steer">
+      <div class="chart-head"><h3>Steering angle</h3><span class="unit">deg</span>
+        <ul class="chart-legend"><li><i class="ln s1"></i>Measured</li><li><i class="ln s2 dash"></i>Command</li></ul></div>
+      <canvas></canvas>
+    </div>
+    <div class="chart" data-chart="accel">
+      <div class="chart-head"><h3>Longitudinal acceleration</h3><span class="unit">m/s²</span>
+        <ul class="chart-legend"><li><i class="ln s1"></i>IMU</li><li><i class="ln s2 dash"></i>Command</li></ul></div>
+      <canvas></canvas>
+    </div>
+    <div class="tip" id="tip" hidden></div>
+  </section>
+
+  <section class="panel laps" aria-labelledby="laps-h">
+    <h2 id="laps-h">Laps</h2>
+    <dl class="lap-sum">
+      <div><dt>Best lap</dt><dd id="l-best">–</dd></div>
+      <div><dt>Cones hit</dt><dd id="l-cones">–</dd></div>
+      <div><dt>Off course</dt><dd id="l-off">–</dd></div>
+    </dl>
+    <div class="pred" id="pred" hidden>
+      <h3>LapSim prediction for this car</h3>
+      <dl class="pred-list">
+        <div><dt id="p-lapsim-label">LapSim</dt><dd id="p-lapsim">–</dd></div>
+        <div><dt id="p-dv-label">DV target</dt><dd id="p-dv">–</dd></div>
+      </dl>
+      <p class="pred-veh" id="p-veh"></p>
+    </div>
+    <table>
+      <thead><tr><th scope="col">Lap</th><th scope="col" class="num">Time (s)</th><th scope="col" class="num">To best (s)</th></tr></thead>
+      <tbody id="lap-rows"><tr class="placeholder"><td colspan="3">No completed laps yet.</td></tr></tbody>
+    </table>
+  </section>
+
+  <section class="panel health" aria-labelledby="health-h">
+    <h2 id="health-h">Sensor health</h2>
+    <table>
+      <thead><tr><th scope="col">Stream</th><th scope="col" class="num">Rate (Hz)</th><th scope="col" class="num">Nominal</th><th scope="col" class="num" title="Age of the data when it arrives: sensor latency and transport">Delay (ms)</th><th scope="col">Status</th></tr></thead>
+      <tbody id="health-rows"></tbody>
+    </table>
+    <p class="note">Rates use message timestamps, so they show what the autonomy stack receives even when the simulator runs slower than real time.</p>
+  </section>
+
+  <section class="panel log" aria-labelledby="log-h">
+    <h2 id="log-h">Events</h2>
+    <ol id="log" class="log-list"></ol>
+  </section>
+</main>
+
+<main class="setup" id="page-setup" hidden>
+  <p class="empty setup-off" id="setup-off" hidden>The Vehicle setup needs the MATLAB LapSim folder (lapsim/LR26_LapSim) next to the simulator.</p>
+
+  <section class="panel setup-form" aria-labelledby="form-h" id="setup-form">
+    <div class="panel-head">
+      <h2 id="form-h">Parameters</h2>
+      <p class="src" id="src-line"></p>
+      <button type="button" class="btn" id="btn-reload">Re-read MATLAB files</button>
+    </div>
+
+    <div class="cfg-bar">
+      <label class="field">Saved configuration
+        <select id="cfg-select"><option value="">LapSim baseline (no changes)</option></select>
+      </label>
+      <button type="button" class="btn" id="btn-load">Load</button>
+      <button type="button" class="btn" id="btn-delete">Delete</button>
+      <label class="field grow">Name
+        <input type="text" id="cfg-name" maxlength="60" placeholder="e.g. LR26 light 270 kg" autocomplete="off">
+      </label>
+      <button type="button" class="btn" id="btn-save">Save</button>
+    </div>
+
+    <p class="hint">Type a new value to change a parameter; leave it empty to keep the value from <code>lr26_params.m</code>.
+      <code>*1.05</code> scales the baseline value. Changes apply to LapSim, MATLAB and the simulation.</p>
+
+    <div id="groups"></div>
+
+    <label class="field other">Other changes <span class="muted">(one per line or separated by spaces; e.g. <code>mu*1.05</code>, <code>c_z+0.3</code>)</span>
+      <textarea id="other" rows="2" spellcheck="false" autocomplete="off"></textarea>
+    </label>
+  </section>
+
+  <aside class="setup-side">
+    <section class="panel apply-panel" aria-labelledby="apply-h">
+      <h2 id="apply-h">Apply</h2>
+      <p class="changes" id="changes-line">No changes: the LapSim baseline.</p>
+      <div class="apply-opts">
+        <label class="check"><input type="checkbox" id="opt-matlab" checked> Run in MATLAB</label>
+        <label class="check"><input type="checkbox" id="opt-sim" checked> Restart the simulation with it</label>
+      </div>
+      <div class="apply-row">
+        <button type="button" class="btn primary" id="btn-apply">Apply to LapSim, MATLAB and simulation</button>
+        <button type="button" class="btn" id="btn-clear">Clear all</button>
+      </div>
+      <p class="setup-msg" id="setup-msg" role="status"></p>
+    </section>
+
+    <section class="panel rl-panel" aria-labelledby="rl-h" id="rl-panel">
+      <div class="panel-head">
+        <h2 id="rl-h">Driver</h2>
+        <div class="seg" role="group" aria-label="Throttle and brake">
+          <button type="button" data-lon="reference" aria-pressed="true">Reference</button>
+          <button type="button" data-lon="rl" aria-pressed="false">RL (learned)</button>
+        </div>
+      </div>
+      <p class="drv-desc" id="drv-desc">Steering always follows the path; this chooses who works the throttle and brakes.</p>
+      <label class="field rl-pol">RL policy
+        <select id="rl-policy"><option value="auto">Automatic: trained for this setup, else universal</option></select>
+      </label>
+      <h3 class="rl-sub">Learned throttle and brake for the applied setup</h3>
+      <p class="rl-match" id="rl-match"></p>
+      <div class="rl-train">
+        <label class="field">Generations <input type="number" id="rl-gens" value="50" min="5" max="1000" step="5"></label>
+        <button type="button" class="btn" id="btn-rl-train">Train RL driver</button>
+        <button type="button" class="btn" id="btn-rl-stop" hidden>Stop</button>
+      </div>
+      <div class="rl-prog" id="rl-prog" hidden>
+        <div class="bar" role="progressbar" aria-labelledby="rl-prog-text" aria-valuemin="0" aria-valuemax="100"><i id="rl-bar"></i></div>
+        <p id="rl-prog-text"></p>
+      </div>
+      <details class="rl-list" id="rl-list-wrap">
+        <summary>Trained policies <span class="muted" id="rl-count"></span></summary>
+        <div class="tbl-scroll"><table class="rl-table">
+          <thead><tr><th scope="col">Policy</th><th scope="col">Vehicle changes</th><th scope="col" class="num">Accel</th>
+            <th scope="col" class="num">Skidpad</th><th scope="col" class="num">Autocross</th></tr></thead>
+          <tbody id="rl-rows"></tbody>
+        </table></div>
+        <p class="note">Times on complete missions in the simulator, RL vs reference driver (difference; negative = RL faster).
+          Autocross: mean over the evaluation tracks.</p>
+      </details>
+    </section>
+
+    <section class="panel results-panel" aria-labelledby="res-h">
+      <div class="panel-head">
+        <h2 id="res-h">Results</h2>
+        <span class="muted" id="res-for"></span>
+      </div>
+      <div class="tbl-scroll">
+      <table class="results">
+        <thead>
+          <tr>
+            <th scope="col">Event</th>
+            <th scope="col" class="num">Baseline</th>
+            <th scope="col" class="num">LapSim</th>
+            <th scope="col" class="num">MATLAB</th>
+            <th scope="col" class="num">DV sim</th>
+          </tr>
+        </thead>
+        <tbody id="res-rows"></tbody>
+        <tfoot id="res-foot"></tfoot>
+      </table>
+      </div>
+      <ul class="status-list" id="status-list"></ul>
+      <div class="mat-files">
+        <h3 class="rl-sub">MATLAB results</h3>
+        <div class="file-btns" id="files-results"><span class="muted">None yet: apply a setup with “Run in MATLAB”.</span></div>
+        <h3 class="rl-sub">LapSim files</h3>
+        <div class="file-btns" id="files-lapsim"></div>
+        <p class="note">They open on this PC with their Windows program (<code>.m</code> in MATLAB, <code>.csv</code> in Excel),
+          folders in File Explorer. After editing <code>lr26_params.m</code>, press <b>Re-read MATLAB files</b>.</p>
+      </div>
+      <p class="note">Times in seconds, points below. Baseline and LapSim use the FSA 2025 tracks and scoring of the
+        competition file. The DV sim drives its own layouts: acceleration and skidpad are the same events, autocross and
+        trackdrive (10 laps) are compared by their change, not their absolute time.</p>
+    </section>
+  </aside>
+</main>
+
+<footer class="foot">
+  <span class="team"><b>Lions Racing</b> Team · Driverless</span>
+  <span id="source">Not connected</span>
+  <span id="clock"></span>
+  <button type="button" id="theme-btn" class="link">Switch to light theme</button>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

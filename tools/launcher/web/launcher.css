@@ -1,0 +1,178 @@
+/* DV launcher: builds on the dashboard's Lions Racing stylesheet (/brand/style.css). */
+
+.tabs .dash-link { color: var(--lr-red); font-weight: 600; }
+
+/* status band under the header */
+.hero {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem;
+  padding: 1.1rem 1.5rem; background: var(--lr-black); color: #f3f4f6; border-bottom: 1px solid var(--line);
+}
+.hero h1 { font-family: var(--font-head); font-weight: 400; font-size: clamp(2.4rem, 4.5vw, 3.4rem); line-height: 0.95; letter-spacing: 0.01em; }
+.hero p { margin-top: 0.3rem; color: #b9c0c9; }
+.hero[data-state="running"] { background: linear-gradient(90deg, var(--lr-red) 0 8px, var(--lr-black) 8px); }
+.hero[data-state="starting"] { background: linear-gradient(90deg, var(--accent) 0 8px, var(--lr-black) 8px); }
+.hero[data-state="failed"] h1 { color: #ff6b7d; }
+.hero-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.btn.big { height: 2.8rem; padding: 0 1.4rem; font-size: 1.02rem; }
+a.btn { display: inline-flex; align-items: center; text-decoration: none; }
+.hero .btn:not(.primary) { background: transparent; color: #f3f4f6; border-color: #3a4552; }
+.btn.danger { color: var(--critical); border-color: color-mix(in srgb, var(--critical) 50%, var(--line)); }
+
+/* layout */
+.lgrid {
+  display: grid; gap: 1rem; padding: 1rem 1.5rem 1.5rem;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+  grid-template-areas: "sim side" "tools jobs" "maint maint";
+  align-items: start;
+}
+.sim-panel { grid-area: sim; }
+.side { grid-area: side; display: grid; gap: 1rem; }
+.tools-panel { grid-area: tools; }
+.jobs-panel { grid-area: jobs; }
+.maint-panel { grid-area: maint; }
+.panel > h2 { margin-bottom: 0.9rem; }
+.panel h3 { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); margin-bottom: 0.35rem; }
+
+.form { display: grid; gap: 0.9rem; }
+.row { display: flex; flex-wrap: wrap; gap: 0.6rem 0.9rem; align-items: end; }
+.row.tight { gap: 0.5rem; margin-top: 0.4rem; }
+.row .grow { flex: 1 1 14rem; }
+.row .grow input, .row .grow select { width: 100%; }
+.row.checks { gap: 0.5rem 1.4rem; }
+.field textarea { height: auto; }
+.field input[type="number"] { width: 8rem; }
+.field select { min-width: 10rem; }
+.row.actions { align-items: center; }
+.msg { flex: 1 1 14rem; color: var(--ink-2); font-size: 0.92rem; overflow-wrap: anywhere; }
+.msg.err { color: var(--critical); }
+
+fieldset.opt { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset.opt legend { color: var(--ink-2); font-size: 0.85rem; margin-bottom: 0.3rem; padding: 0; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
+.card {
+  position: relative; display: grid; gap: 0.25rem; padding: 0.75rem 0.85rem 0.8rem; cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--r); background: var(--bg);
+}
+.card input { position: absolute; opacity: 0; pointer-events: none; }
+.card b { font-family: var(--font-head); font-weight: 400; font-size: 1.45rem; letter-spacing: 0.03em; line-height: 1; }
+.card span { color: var(--ink-2); font-size: 0.86rem; }
+.card:has(input:checked) { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+.card:has(input:checked) b { color: var(--primary); }
+.card:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.steps { margin-top: 1rem; display: grid; gap: 0.3rem; font-size: 0.9rem; }
+.steps:empty { display: none; }
+.steps li { display: grid; grid-template-columns: 6rem 1fr; gap: 0.6rem; color: var(--ink-2); }
+.steps li time { color: var(--muted); text-align: right; }
+.steps li.ok span { color: var(--ink); }
+.steps li.ok span::before { content: "✓ "; color: var(--good); font-weight: 700; }
+.steps li.error span { color: var(--critical); font-weight: 600; }
+
+/* system checks and processes */
+.checks-list, .procs, .jobs { display: grid; gap: 0.45rem; }
+.checks-list li { display: flex; gap: 0.55rem; align-items: start; font-size: 0.92rem; }
+.checks-list li small { display: block; color: var(--muted); font-size: 0.8rem; }
+.procs li, .jobs li {
+  display: grid; grid-template-columns: 1fr auto; gap: 0.2rem 0.6rem; align-items: center;
+  padding: 0.55rem 0; border-bottom: 1px solid var(--line);
+}
+.procs li:last-child, .jobs li:last-child { border-bottom: 0; }
+.procs .t, .jobs .t { font-weight: 600; overflow-wrap: anywhere; }
+.procs .last, .jobs .last { grid-column: 1 / -1; color: var(--muted); font-size: 0.8rem; font-family: ui-monospace, Consolas, monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pbtns { display: flex; gap: 0.35rem; }
+.pbtns .btn { height: 1.9rem; padding: 0 0.6rem; font-size: 0.85rem; }
+.links { grid-column: 1 / -1; display: flex; gap: 0.8rem; flex-wrap: wrap; font-size: 0.88rem; }
+.links a { color: var(--primary); }
+.empty { color: var(--muted); }
+.badge { display: inline-block; margin-left: 0.4rem; padding: 0 0.4rem; border-radius: 3px; font-size: 0.72rem; font-weight: 700;
+  vertical-align: 1px; text-transform: uppercase; letter-spacing: 0.04em; background: var(--road); color: var(--ink-2); }
+.badge.running { background: var(--primary); color: #fff; }
+.badge.done { background: var(--good); color: #fff; }
+.badge.failed { background: var(--critical); color: #fff; }
+
+/* tools */
+.tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.8rem; }
+.tool { display: grid; gap: 0.5rem; align-content: start; padding: 0.85rem; border: 1px solid var(--line); border-radius: var(--r);
+  border-top: 3px solid var(--primary); }
+.tool p { color: var(--ink-2); font-size: 0.86rem; }
+.tool .field input, .tool .field select, .tool .field textarea { width: 100%; }
+.tool .row .field input[type="number"] { width: 100%; }
+.tool .row .field { flex: 1 1 6rem; }
+.tool > .btn { justify-self: start; margin-top: 0.2rem; }
+.events { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; }
+
+.maint { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 2rem; }
+.maint form { display: grid; gap: 0.5rem; }
+.maint .field input { width: 100%; }
+
+/* log viewer */
+.logview { position: fixed; inset: 0; z-index: 10; background: rgb(0 0 0 / 0.55); display: grid; place-items: center; padding: 1rem; }
+.logbox { width: min(1100px, 100%); max-height: 90vh; display: grid; grid-template-rows: auto 1fr; background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.loghead { display: flex; gap: 1rem; align-items: center; padding: 0.7rem 1rem; border-bottom: 1px solid var(--line); }
+.loghead h2 { margin-right: auto; font-family: var(--font-head); font-weight: 400; font-size: 1.4rem; overflow-wrap: anywhere; }
+.logbox pre { margin: 0; padding: 0.8rem 1rem; overflow: auto; font-size: 0.8rem; line-height: 1.35; white-space: pre-wrap;
+  overflow-wrap: anywhere; background: var(--bg); color: var(--ink); min-height: 50vh; }
+
+@media (max-width: 1100px) {
+  .lgrid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sim" "side" "tools" "jobs" "maint"; }
+}
+@media (max-width: 720px) {
+  .lgrid { padding: 1rem; }
+  .hero { padding: 1rem; }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+  .maint { grid-template-columns: minmax(0, 1fr); }
+  .tabs .dash-link { display: none; }
+}
+
+.hint.small { font-size: 0.8rem; color: var(--muted); }
+.share .row { margin-top: 0; }
+h3.mt { margin-top: 1rem; }
+.copied { border-color: var(--good) !important; color: var(--good) !important; }
+
+/* ---------------------------------------------------------------- vehicle setup */
+/* the page itself uses the dashboard's Vehicle setup styles (.setup, .pgroup, .ptable, .cfg-bar) */
+fieldset.veh { border-top: 1px solid var(--line); padding-top: 0.8rem; display: grid; gap: 0.5rem; min-width: 0; }
+fieldset.veh .row { align-items: end; }
+.veh-brief:empty { display: none; }
+.veh-brief .hint { margin: 0; }
+.veh-summary { display: grid; gap: 0.6rem; min-width: 0; }
+.veh-errors { color: var(--critical); font-size: 0.9rem; padding-left: 1.1rem; list-style: disc; }
+.veh-notes { margin: 0; }
+.veh-brief .warn, .veh-notes .warn { color: var(--critical); font-weight: 600; }
+.vtable { width: 100%; border-collapse: collapse; font-size: 0.88rem; font-variant-numeric: tabular-nums; min-width: 20rem; }
+.vtable th, .vtable td { padding: 0.32rem 0.5rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.vtable thead th { color: var(--muted); font-weight: 600; font-size: 0.78rem; }
+.vtable tbody th { font-weight: 500; }
+.vtable .num { text-align: right; white-space: nowrap; }
+.vtable .better { color: var(--good); font-weight: 600; }
+.vtable .worse { color: var(--critical); font-weight: 600; }
+.vtable tfoot th, .vtable tfoot td { border-bottom: 0; }
+#page-setup .setup-form { min-width: 0; }
+#page-setup .note { color: var(--muted); font-size: 0.82rem; margin-top: 0.6rem; }
+#page-setup .apply-row { margin-top: 0.8rem; }
+#page-setup .setup-side h2 { margin-bottom: 0.6rem; }
+#vs-running a { color: var(--primary); }
+@media (max-width: 640px) {
+  .setup { padding: 1rem; }
+  .ptable .p-key { display: none; }
+}
+
+/* MATLAB panel */
+.mat-status { font-size: 0.9rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.mat-status.err { color: var(--critical); white-space: pre-wrap; max-height: 12rem; overflow: auto; }
+.mat-status.good { color: var(--ink); }
+.file-btns { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.btn.small-btn { height: 2rem; padding: 0 0.7rem; font-size: 0.86rem; }
+.btn.small-btn .muted { font-size: 0.78rem; }
+.vtable td small { display: block; color: var(--muted); font-size: 0.75rem; }
+.vtable td small.better { color: var(--good); font-weight: 600; }
+.vtable td small.worse { color: var(--critical); font-weight: 600; }
+
+/* Performance Lab card in the tools panel */
+.perf-lab-card { display: flex; flex-wrap: wrap; gap: 0.6rem 1.2rem; align-items: center; justify-content: space-between;
+  padding: 0.8rem 0.9rem; margin-bottom: 1rem; border: 1px solid var(--line); border-left: 4px solid var(--lr-red);
+  border-radius: var(--r); background: var(--bg); }
+.perf-lab-card > div:first-child { flex: 1 1 22rem; }
+.perf-lab-card h3 { margin-bottom: 0.2rem; }

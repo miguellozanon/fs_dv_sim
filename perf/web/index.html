@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lions Racing · Performance Lab</title>
+<meta name="theme-color" content="#0c1118">
+<link rel="icon" type="image/png" href="/brand/favicon.png">
+<link rel="preload" href="/brand/bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/brand/style.css">
+<link rel="stylesheet" href="/static/perf.css">
+</head>
+<body>
+<header class="brand">
+  <a class="brand-id" href="#overview" aria-label="Lions Racing Team, Performance Lab">
+    <img src="/brand/lions-logo.png" alt="Lions Racing Team" width="480" height="179">
+    <span class="brand-app">Performance Lab</span>
+  </a>
+  <nav class="tabs" aria-label="Sections">
+    <a href="#overview">Overview</a>
+    <a href="#setup">Setup</a>
+    <a href="#studies">Studies</a>
+    <a href="#transient">Transient</a>
+    <a href="#methods">Methods</a>
+    <a href="#energy">Energy</a>
+    <a href="#ggv">ggV</a>
+    <a href="#logs">Logs</a>
+    <a href="#guide" class="guide-link">Guide</a>
+  </nav>
+</header>
+
+<!-- what every page runs: competition, setup, efficiency map -->
+<section class="ctx" aria-label="Active setup">
+  <label class="field">Competition
+    <select id="ctx-comp"></select>
+  </label>
+  <div class="ctx-setup">
+    <span class="ctx-k">Setup</span>
+    <b id="ctx-name">Baseline (lr26_params.m)</b>
+    <span id="ctx-changes" class="ctx-changes">no changes</span>
+  </div>
+  <label class="field">Motor efficiency
+    <select id="ctx-eta"></select>
+  </label>
+  <div class="ctx-total">
+    <span class="ctx-k">Total</span>
+    <b id="ctx-total">–</b>
+    <span id="ctx-delta" class="ctx-delta"></span>
+  </div>
+  <a class="btn" id="help-page" href="#guide" title="Help for this page">? Help</a>
+  <button type="button" class="btn" id="quit" title="Stop the Performance Lab">Quit</button>
+</section>
+
+<main>
+<!-- ============================================================== overview -->
+<section id="page-overview" class="page" data-page="overview">
+  <div class="panel newhere" id="ov-new" hidden>
+    <p><b>New here?</b> The Guide explains every page in plain words and has step-by-step recipes
+      (e.g. "is 10 kg lighter worth it?").</p>
+    <div class="row"><a class="btn primary" href="#guide">Open the guide</a>
+      <button type="button" class="btn" id="ov-new-close">Hide</button></div>
+  </div>
+  <div class="kpis" id="ov-kpis"></div>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Events</h2>
+      <button type="button" class="btn small" id="ov-csv">Export CSV</button>
+    </div>
+    <div class="tablewrap"><table id="ov-table"></table></div>
+    <p class="note" id="ov-note"></p>
+  </div>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Lap traces</h2>
+      <div class="seg" id="ov-event" role="group" aria-label="Event"></div>
+      <button type="button" class="btn small" id="ov-trace-csv">Export traces</button>
+    </div>
+    <div class="twocol">
+      <div>
+        <h3 class="ch">Speed <span class="unit">km/h</span></h3>
+        <div id="ov-v"></div>
+        <h3 class="ch">Longitudinal acceleration <span class="unit">g</span></h3>
+        <div id="ov-ax"></div>
+        <h3 class="ch">Lateral acceleration <span class="unit">g</span></h3>
+        <div id="ov-ay"></div>
+      </div>
+      <div>
+        <h3 class="ch">Speed on the track <span class="unit">km/h</span></h3>
+        <div id="ov-map"></div>
+        <h3 class="ch">Accumulator power <span class="unit">kW</span></h3>
+        <div id="ov-p"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== setup -->
+<section id="page-setup" class="page" data-page="setup" hidden>
+  <div class="setup-grid">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Parameters</h2>
+        <button type="button" class="btn small" id="su-clear">Clear all</button>
+      </div>
+      <p class="hint">Type a value to change it (baseline from <code id="su-src">lr26_params.m</code>). Relative: <code>*1.05</code>, <code>+10</code>, <code>+-5</code>.
+        Yaw inertia and steering limits only act on the transient lap.</p>
+      <div id="su-groups"></div>
+      <h3 class="sub">Other changes</h3>
+      <p class="hint">One change per line or separated by spaces, with LapSim names and aliases, e.g. <code>mu*1.02</code> or <code>autocross.util_y=0.85</code>.</p>
+      <textarea id="su-extra" class="extra" rows="3" spellcheck="false" aria-label="Other changes"></textarea>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h2>Apply</h2>
+        <div id="su-list" class="changes"></div>
+        <div class="row">
+          <button type="button" class="btn primary" id="su-apply">Apply and run</button>
+          <button type="button" class="btn" id="su-base">Back to baseline</button>
+        </div>
+        <p class="msg" id="su-msg" role="status"></p>
+      </div>
+      <div class="panel">
+        <h2>Saved setups</h2>
+        <p class="hint">Shared with the dashboard's Vehicle setup page (<code>lapsim/configs</code>).</p>
+        <ul id="su-saved" class="saved"></ul>
+        <h3 class="sub">Save the current changes</h3>
+        <div class="form">
+          <label class="field">Name <input id="su-name" maxlength="60" placeholder="e.g. LR26 wing v2"></label>
+          <label class="field">Notes <textarea id="su-notes" rows="2"></textarea></label>
+          <div class="row">
+            <button type="button" class="btn" id="su-save">Save setup</button>
+            <label class="check"><input type="checkbox" id="su-overwrite"> replace a setup with the same name</label>
+          </div>
+          <p class="msg" id="su-save-msg" role="status"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== studies -->
+<section id="page-studies" class="page" data-page="studies" hidden>
+  <div class="seg big" id="st-mode" role="group" aria-label="Study">
+    <button type="button" data-mode="sens" aria-pressed="true">Sensitivity</button>
+    <button type="button" data-mode="sweep" aria-pressed="false">Sweep</button>
+    <button type="button" data-mode="map" aria-pressed="false">2-D map</button>
+    <button type="button" data-mode="cmp" aria-pressed="false">Compare setups</button>
+  </div>
+
+  <div class="panel study" data-mode="sens">
+    <h2>Sensitivity (documentation Table 2.1)</h2>
+    <p class="hint">Each parameter at ±δ of its value with everything else as in the active setup. Points per % in the improving direction, as LR26_LapSim's <code>lts_sensitivity_table</code>.</p>
+    <div class="row">
+      <label class="field grow">Parameters <input id="se-params" spellcheck="false"></label>
+      <label class="field">δ [%] <input id="se-delta" type="number" value="10" min="1" max="50" step="1"></label>
+      <button type="button" class="btn primary" id="se-run">Run</button>
+    </div>
+    <div class="job" id="se-job" hidden></div>
+    <div id="se-out" hidden>
+      <h3 class="ch">Change of total points</h3>
+      <div id="se-bars"></div>
+      <div class="panel-head"><h3 class="ch">Per event</h3><button type="button" class="btn small" id="se-csv">Export CSV</button></div>
+      <div class="tablewrap"><table id="se-table"></table></div>
+    </div>
+  </div>
+
+  <div class="panel study" data-mode="sweep" hidden>
+    <h2>Parameter sweep</h2>
+    <div class="row">
+      <label class="field">Parameter <input id="sw-param" list="param-list" value="i_trans" spellcheck="false"></label>
+      <label class="field">From <input id="sw-from" type="number" step="any" value="11.6"></label>
+      <label class="field">To <input id="sw-to" type="number" step="any" value="23.2"></label>
+      <label class="field">Steps <input id="sw-n" type="number" min="2" max="60" value="12"></label>
+      <label class="field">Speed traces of <select id="sw-trace"><option value="">no traces</option></select></label>
+      <button type="button" class="btn primary" id="sw-run">Run</button>
+    </div>
+    <div class="job" id="sw-job" hidden></div>
+    <div id="sw-out" hidden>
+      <div class="twocol">
+        <div><h3 class="ch">Total points</h3><div id="sw-total"></div></div>
+        <div><h3 class="ch">Points per event</h3><div id="sw-events"></div></div>
+      </div>
+      <div class="twocol">
+        <div><h3 class="ch">Event time <span class="unit">s</span> <select id="sw-tev" class="inline"></select></h3><div id="sw-time"></div></div>
+        <div id="sw-trace-box"><h3 class="ch">Speed <span class="unit">km/h</span></h3><div id="sw-traces"></div></div>
+      </div>
+      <div class="panel-head"><h3 class="ch">Results</h3><button type="button" class="btn small" id="sw-csv">Export CSV</button></div>
+      <div class="tablewrap"><table id="sw-table"></table></div>
+    </div>
+  </div>
+
+  <div class="panel study" data-mode="map" hidden>
+    <h2>Two-parameter map</h2>
+    <div class="row">
+      <label class="field">Parameter 1 <input id="m2-p1" list="param-list" value="c_z" spellcheck="false"></label>
+      <label class="field">From <input id="m2-f1" type="number" step="any" value="3.3"></label>
+      <label class="field">To <input id="m2-t1" type="number" step="any" value="5.0"></label>
+      <label class="field">Steps <input id="m2-n1" type="number" min="2" max="25" value="8"></label>
+    </div>
+    <div class="row">
+      <label class="field">Parameter 2 <input id="m2-p2" list="param-list" value="c_w" spellcheck="false"></label>
+      <label class="field">From <input id="m2-f2" type="number" step="any" value="1.15"></label>
+      <label class="field">To <input id="m2-t2" type="number" step="any" value="1.75"></label>
+      <label class="field">Steps <input id="m2-n2" type="number" min="2" max="25" value="8"></label>
+      <button type="button" class="btn primary" id="m2-run">Run</button>
+    </div>
+    <div class="job" id="m2-job" hidden></div>
+    <div id="m2-out" hidden>
+      <div class="panel-head">
+        <h3 class="ch">Points</h3>
+        <select id="m2-show" class="inline" aria-label="Show"></select>
+        <span id="m2-best" class="muted"></span>
+        <button type="button" class="btn small" id="m2-csv">Export CSV</button>
+      </div>
+      <div id="m2-heat"></div>
+    </div>
+  </div>
+
+  <div class="panel study" data-mode="cmp" hidden>
+    <h2>Compare setups</h2>
+    <p class="hint">The active setup and up to seven saved ones.</p>
+    <ul id="cm-pick" class="picks"></ul>
+    <div class="row"><button type="button" class="btn primary" id="cm-run">Compare</button></div>
+    <div class="job" id="cm-job" hidden></div>
+    <div id="cm-out" hidden>
+      <div class="tablewrap"><table id="cm-table"></table></div>
+      <div class="panel-head">
+        <h3 class="ch">Traces</h3>
+        <div class="seg" id="cm-event" role="group" aria-label="Event"></div>
+        <button type="button" class="btn small" id="cm-csv">Export CSV</button>
+      </div>
+      <div class="twocol">
+        <div><h3 class="ch">Speed <span class="unit">km/h</span></h3><div id="cm-v"></div></div>
+        <div><h3 class="ch">Time difference to the first setup <span class="unit">s</span></h3><div id="cm-dt"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== transient -->
+<section id="page-transient" class="page" data-page="transient" hidden>
+  <div class="panel">
+    <h2>Transient lap</h2>
+    <p class="hint">The active setup driven by the simulator's dynamic vehicle model and reference driver on the event's centreline, against the quasi-steady LapSim. Closed tracks: two laps from standstill, the second is timed. Takes a few seconds (endurance ~10 s).</p>
+    <div class="row">
+      <label class="field">Event <select id="tr-event"></select></label>
+      <label class="field">Time step [s] <input id="tr-dt" type="number" value="0.02" min="0.005" max="0.05" step="0.005"></label>
+      <label class="field">Track width [m] <input id="tr-w" type="number" value="3" min="2" max="8" step="0.5"></label>
+      <button type="button" class="btn primary" id="tr-run">Run</button>
+    </div>
+    <div class="job" id="tr-job" hidden></div>
+  </div>
+  <div id="tr-out" hidden>
+    <div class="kpis" id="tr-kpis"></div>
+    <div class="panel">
+      <div class="panel-head"><h2>Against the quasi-steady lap</h2><button type="button" class="btn small" id="tr-csv">Export CSV</button></div>
+      <div class="twocol">
+        <div>
+          <h3 class="ch">Speed <span class="unit">km/h</span></h3><div id="tr-v"></div>
+          <h3 class="ch">Time lost to QSS <span class="unit">s</span></h3><div id="tr-dt-chart"></div>
+        </div>
+        <div><h3 class="ch">Driven line, speed <span class="unit">km/h</span></h3><div id="tr-map"></div></div>
+      </div>
+      <div class="twocol">
+        <div><h3 class="ch">Steering angle <span class="unit">°</span></h3><div id="tr-steer"></div></div>
+        <div><h3 class="ch">Sideslip angle <span class="unit">°</span></h3><div id="tr-beta"></div></div>
+      </div>
+      <div class="twocol">
+        <div><h3 class="ch">Lateral offset from the line <span class="unit">m</span></h3><div id="tr-lat"></div></div>
+        <div><h3 class="ch">Lateral acceleration <span class="unit">g</span></h3><div id="tr-ay"></div></div>
+      </div>
+      <p class="note" id="tr-note"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== methods -->
+<section id="page-methods" class="page" data-page="methods" hidden>
+  <div class="panel">
+    <h2>Methods: which model answers which question</h2>
+    <p class="hint">The same car solved by different lap time methods. QSS is the fast, calibrated tool for rankings; the optimal-control (OCP) models give the limit of a perfect driver with more vehicle physics; the transient lap a realistic driver. <span id="me-ocp"></span></p>
+    <div class="table-wrap"><table class="ptable" id="me-guide"></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>One method, one event</h2></div>
+    <p class="hint">Minimum-time optimal control on the event's line (CasADi + IPOPT). Point mass: seconds. Single / double track: up to ~1 min for autocross and endurance.</p>
+    <div class="row">
+      <label class="field">Event <select id="oc-event"></select></label>
+      <label class="field">Model <select id="oc-model">
+        <option value="point_mass">point mass (ggV envelope)</option>
+        <option value="single_track">single track (bicycle)</option>
+        <option value="double_track">double track</option>
+      </select></label>
+      <label class="check"><input type="checkbox" id="oc-tv"> torque vectoring (double track)</label>
+      <label class="check"><input type="checkbox" id="oc-free"> free line</label>
+      <label class="field">Track width [m] <input id="oc-w" type="number" value="3.5" min="2" max="10" step="0.5"></label>
+      <button type="button" class="btn primary" id="oc-run">Run</button>
+    </div>
+    <div class="job" id="oc-job" hidden></div>
+    <div id="oc-out" hidden>
+      <div class="kpis" id="oc-kpis"></div>
+      <p class="msg err" id="oc-warn" hidden></p>
+      <div class="panel-head"><h3 class="ch">Results</h3><button type="button" class="btn small" id="oc-csv">Export CSV</button></div>
+      <div class="twocol">
+        <div>
+          <h3 class="ch">Speed <span class="unit">km/h</span></h3><div id="oc-v"></div>
+          <h3 class="ch">Accelerations <span class="unit">g</span></h3><div id="oc-a"></div>
+        </div>
+        <div><h3 class="ch">Line, speed <span class="unit">km/h</span></h3><div id="oc-map"></div></div>
+      </div>
+      <div class="twocol" id="oc-dyn">
+        <div><h3 class="ch">Steering angle <span class="unit">°</span></h3><div id="oc-steer"></div></div>
+        <div><h3 class="ch">Sideslip angle <span class="unit">°</span></h3><div id="oc-beta"></div></div>
+      </div>
+      <p class="note" id="oc-note"></p>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Compare the methods</h2>
+    <p class="hint">Every chosen method on one event, for the active setup and with one change (e.g. <code>mass-5</code>, <code>mu*1.02</code>). Shows whether the methods agree on the gain. The optimal-control models make this take minutes on autocross and endurance.</p>
+    <div class="row">
+      <label class="field">Event <select id="mc-event"></select></label>
+      <label class="field">Change <input id="mc-change" value="mass-5" list="param-list" size="16"></label>
+    </div>
+    <div class="row" id="mc-methods"></div>
+    <div class="row"><button type="button" class="btn primary" id="mc-run">Compare</button></div>
+    <div class="job" id="mc-job" hidden></div>
+    <div id="mc-out" hidden>
+      <div class="panel-head"><h3 class="ch" id="mc-title">Results</h3><button type="button" class="btn small" id="mc-csv">Export CSV</button></div>
+      <div class="table-wrap"><table class="ptable" id="mc-table"></table></div>
+      <div class="twocol">
+        <div><h3 class="ch">Time change of the change <span class="unit">s</span></h3><div id="mc-dt"></div></div>
+        <div><h3 class="ch">Baseline time against LapSim QSS <span class="unit">%</span></h3><div id="mc-rel"></div></div>
+      </div>
+      <p class="note" id="mc-note"></p>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Robustness (Monte-Carlo on QSS)</h2>
+    <p class="hint">The parameters we do not know exactly are drawn from a normal distribution (1σ, relative). Gives the spread of the points and, with a change, the probability that it gains on the same draws. 200 draws ≈ 1–2 min.</p>
+    <div class="row">
+      <label class="field">Draws <input id="mo-n" type="number" value="200" min="10" max="5000" step="10"></label>
+      <label class="field">Change <input id="mo-change" value="mass-5" list="param-list" size="16"></label>
+      <label class="field">Seed <input id="mo-seed" type="number" value="1" min="0" step="1"></label>
+    </div>
+    <div class="row" id="mo-unc"></div>
+    <div class="row"><button type="button" class="btn primary" id="mo-run">Run</button></div>
+    <div class="job" id="mo-job" hidden></div>
+    <div id="mo-out" hidden>
+      <div class="kpis" id="mo-kpis"></div>
+      <div class="twocol">
+        <div><h3 class="ch">Total points, distribution</h3><div id="mo-hist"></div></div>
+        <div><h3 class="ch">Gain of the change, distribution <span class="unit">points</span></h3><div id="mo-ghist"></div></div>
+      </div>
+      <div class="table-wrap"><table class="ptable" id="mo-table"></table></div>
+      <p class="note" id="mo-note"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== energy -->
+<section id="page-energy" class="page" data-page="energy" hidden>
+  <div class="panel">
+    <h2>Energy and endurance</h2>
+    <div class="row">
+      <label class="field">Battery energy budget [kWh] <input id="en-budget" type="number" step="0.1" min="0" placeholder="optional"></label>
+      <label class="field grow">Power caps [kW] <input id="en-caps" placeholder="auto: 8 to 80 kW in 2 kW steps" spellcheck="false"></label>
+      <button type="button" class="btn primary" id="en-run">Run</button>
+    </div>
+    <div class="job" id="en-job" hidden></div>
+  </div>
+  <div id="en-out" hidden>
+    <div class="kpis" id="en-kpis"></div>
+    <div class="twocol">
+      <div class="panel">
+        <h2>Where the energy of a lap goes</h2>
+        <div id="en-break"></div>
+        <p class="note" id="en-break-note"></p>
+      </div>
+      <div class="panel">
+        <h2>Energy per event</h2>
+        <div class="tablewrap"><table id="en-events"></table></div>
+        <div id="en-budget-out"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Endurance power cap</h2><button type="button" class="btn small" id="en-csv">Export CSV</button></div>
+      <div class="twocol">
+        <div><h3 class="ch">Endurance points</h3><div id="en-pts"></div></div>
+        <div><h3 class="ch">Energy, all laps <span class="unit">kWh</span></h3><div id="en-e"></div></div>
+      </div>
+      <div class="twocol">
+        <div><h3 class="ch">Lap time <span class="unit">s</span></h3><div id="en-t"></div></div>
+        <div><h3 class="ch">Accumulator power on a lap <span class="unit">kW</span></h3><div id="en-p"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== ggv -->
+<section id="page-ggv" class="page" data-page="ggv" hidden>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>ggV diagram</h2>
+      <label class="field inline-field">Limits of <select id="gg-event"><option value="">the tyres (utilisation 1)</option></select></label>
+      <button type="button" class="btn primary" id="gg-run">Show</button>
+      <button type="button" class="btn small" id="gg-csv">Export CSV</button>
+    </div>
+    <p class="hint">Longitudinal acceleration limits against lateral acceleration at each speed (exactly what the QSS solver uses).</p>
+    <div class="twocol">
+      <div><h3 class="ch">gg diagram per speed <span class="unit">g</span></h3><div id="gg-gg"></div></div>
+      <div><h3 class="ch">Limits against speed <span class="unit">g</span></h3><div id="gg-v"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== logs -->
+<section id="page-logs" class="page" data-page="logs" hidden>
+  <div class="twocol">
+    <div class="panel">
+      <h2>Log</h2>
+      <div class="row">
+        <label class="field grow">File <select id="lg-src"></select></label>
+        <label class="btn" for="lg-file">Upload .mf4 / .csv</label>
+        <input type="file" id="lg-file" accept=".mf4,.mdf,.csv" hidden>
+      </div>
+      <p class="msg" id="lg-msg" role="status"></p>
+      <div id="lg-map" hidden>
+        <h3 class="sub">Channels</h3>
+        <div class="chmap">
+          <span>Speed</span><select id="lg-v"></select><select id="lg-vu"></select>
+          <span>Long. accel.</span><select id="lg-ax"></select><select id="lg-axu"></select>
+          <span>Lat. accel.</span><select id="lg-ay"></select><select id="lg-ayu"></select>
+          <span class="csvonly">Time</span><select id="lg-t" class="csvonly"></select><span class="csvonly"></span>
+          <span class="csvonly">Distance</span><select id="lg-s" class="csvonly"></select><span class="csvonly"></span>
+        </div>
+        <div class="row">
+          <label class="field">From [s] <input id="lg-t0" type="number" step="any" placeholder="start"></label>
+          <label class="field">To [s] <input id="lg-t1" type="number" step="any" placeholder="end"></label>
+          <label class="field">Event <select id="lg-event"></select></label>
+          <label class="field">Distance offset [m] <input id="lg-shift" placeholder="auto" spellcheck="false"></label>
+          <button type="button" class="btn primary" id="lg-run">Correlate</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Powertrain from the log</h2>
+      <p class="hint">MF4 logs with the LR26 inverter channels (act_Speed / act_Torque / act_Power, DCU A and B): motor + inverter efficiency, loss model and the roll-out check.</p>
+      <div class="row">
+        <label class="field">Motors per driven axle <input id="pt-n" type="number" value="2" min="1" max="4" step="1"></label>
+        <button type="button" class="btn" id="pt-run">Analyse</button>
+      </div>
+      <div id="pt-out" hidden></div>
+    </div>
+  </div>
+  <div id="lg-out" hidden>
+    <div class="kpis" id="lg-kpis"></div>
+    <div class="panel">
+      <div class="panel-head"><h2>Log against the simulated lap</h2><button type="button" class="btn small" id="lg-csv">Export CSV</button></div>
+      <div class="twocol">
+        <div><h3 class="ch">Speed <span class="unit">km/h</span></h3><div id="lg-cv"></div></div>
+        <div><h3 class="ch">Time difference, log − simulation <span class="unit">s</span></h3><div id="lg-cdt"></div></div>
+      </div>
+      <div class="twocol">
+        <div><h3 class="ch">Longitudinal acceleration <span class="unit">g</span></h3><div id="lg-cax"></div></div>
+        <div><h3 class="ch">Lateral acceleration (magnitude) <span class="unit">g</span></h3><div id="lg-cay"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== guide -->
+<section id="page-guide" class="page guide" data-page="guide" hidden>
+  <div class="panel welcome" id="g-start">
+    <h2>Start here</h2>
+    <p>The <b>Performance Lab</b> predicts how fast the LR26 is in the four dynamic events of a Formula Student
+      competition (acceleration, skidpad, autocross, endurance) and how many <b>points</b> that gives. Change something on
+      the car, and it tells you within a second what it gains or costs. You do not need to code.</p>
+    <ol class="steps-list">
+      <li><b>Overview</b> shows the car as it is: times, points and speed on the track.</li>
+      <li><b>Setup</b>: type a new value (for example mass 270 instead of 284), press <b>Apply and run</b>. The bar at the
+        top now shows the new total and the difference (green = better).</li>
+      <li><b>Save setup</b> keeps it for the team. <b>Back to baseline</b> returns to the real car.</li>
+    </ol>
+    <p class="hint">The bar at the top always says which car you look at. Every other page (Studies, Transient, Energy,
+      ggV, Logs) works on that car. Nothing you do here changes the car's data files.</p>
+  </div>
+
+  <div class="panel" id="g-howto">
+    <h2>How do I ...</h2>
+    <details class="howto" open><summary>... see how good a change is (e.g. 10 kg lighter)?</summary>
+      <ol><li>Setup → Vehicle → <i>Vehicle mass</i>: type the new value, <code>274</code>. (Relative changes also work:
+        <code>*0.96</code> = −4 %, <code>+-10</code> = 10 less.)</li>
+      <li>Press <b>Apply and run</b>. The top bar shows the new total and the change.</li>
+      <li>Overview: which events gained, by how much time.</li></ol></details>
+    <details class="howto"><summary>... find out which parameters matter most?</summary>
+      <ol><li>Studies → <b>Sensitivity</b> → Run (about 6 s).</li>
+      <li>The longest bars matter most. "P/%" in the table = points per 1 % change in the better direction.</li>
+      <li>For mass you also get points per kg: useful to decide if a part that saves weight is worth its cost.</li></ol></details>
+    <details class="howto"><summary>... find the best value of one parameter (e.g. gear ratio)?</summary>
+      <ol><li>Studies → <b>Sweep</b>: parameter <code>i_trans</code>, from 12 to 23, 12 steps → Run.</li>
+      <li>The top of the "Total points" curve is the best value; the dotted line is today's car.</li>
+      <li>Check the per-event chart: a value can win one event and lose another.</li></ol></details>
+    <details class="howto"><summary>... trade two things against each other (downforce vs drag)?</summary>
+      <ol><li>Studies → <b>2-D map</b>: <code>c_z</code> and <code>c_w</code> with their ranges → Run.</li>
+      <li>Darker = more points. Hover over a square for its numbers. The best point is outlined.</li></ol></details>
+    <details class="howto"><summary>... compare design options (old car, new wing, ...)?</summary>
+      <ol><li>Save each option as a setup (Setup → Save setup).</li>
+      <li>Studies → <b>Compare setups</b>: tick them → Compare. The table shows points per event; the right chart shows
+        where on the lap each option gains or loses time.</li></ol></details>
+    <details class="howto"><summary>... check if a driver (or the driverless car) can really reach these times?</summary>
+      <ol><li><b>Transient</b> → choose an event → Run.</li>
+      <li>It drives the lap with a dynamic car model and a driver. Expect 3-8 % slower than the main result; the chart
+        "time lost" shows where.</li></ol></details>
+    <details class="howto"><summary>... plan the endurance energy (battery size, power limit)?</summary>
+      <ol><li><b>Energy</b>: type the usable battery energy in kWh (e.g. <code>5</code>) → Run.</li>
+      <li>It finds the highest power limit that still finishes 16 laps with that energy, and its points.</li>
+      <li>"Where the energy goes" shows what to work on (brakes, drag, drivetrain).</li></ol></details>
+    <details class="howto"><summary>... compare with a test drive?</summary>
+      <ol><li><b>Logs</b> → Upload the log (.mf4 from the car, or a .csv). Pick the speed channel and its unit.</li>
+      <li>Choose the event and press <b>Correlate</b>. Small "speed RMSE" (a few km/h) = the model fits the car.</li>
+      <li>The offset is found automatically; type a number only if the start of the log and the timing line differ a lot.</li></ol></details>
+    <details class="howto"><summary>... use the motor efficiency measured on the car?</summary>
+      <ol><li>Logs → choose an .mf4 with the inverter channels → <b>Analyse</b> → give it a name → <b>Save map</b>.</li>
+      <li>At the top, <b>Motor efficiency</b>: choose the map. All energy numbers now use it.</li></ol></details>
+    <details class="howto"><summary>... share my work with the team?</summary>
+      <ol><li>Saved setups are files in <code>lapsim\configs</code>: they are shared with the driverless simulator and go
+        to git with the project.</li>
+      <li>Every table and chart has <b>Export CSV</b> (for Excel).</li>
+      <li>The launcher window: <b>Back up setups</b> makes one zip of all setups.</li></ol></details>
+    <details class="howto"><summary>... change the car for good (new baseline)?</summary>
+      <p>The baseline is <code>lapsim\LR26_LapSim\config\lr26_params.m</code>, the Performance department's file
+        (MATLAB). Change it only when the department agrees: every tool of the team uses it. The Lab reads it again
+        by itself; reload the page.</p></details>
+  </div>
+
+  <div class="panel" id="g-pages">
+    <h2>The pages</h2>
+    <dl class="gdl">
+      <dt id="guide-overview">Overview</dt><dd>All four events: time, points, change against the baseline, speed and
+        accelerations along the lap, speed on the track map, battery power. Click an event name above the charts to switch.</dd>
+      <dt id="guide-setup">Setup</dt><dd>Every car parameter with its unit and baseline value (grey). Type a value to
+        change it; <code>*1.05</code> = +5 %, <code>+10</code> = add 10. "Other changes" takes anything else in LapSim
+        notation, e.g. <code>autocross.util_y=0.85</code> (driver uses 85 % of the grip in autocross).</dd>
+      <dt id="guide-studies">Studies</dt><dd><b>Sensitivity</b>: every parameter ±10 %. <b>Sweep</b>: one parameter over a
+        range. <b>2-D map</b>: two parameters. <b>Compare setups</b>: saved setups side by side. Long studies show a
+        progress bar and can be cancelled.</dd>
+      <dt id="guide-transient">Transient</dt><dd>A check of the main (quasi-steady) result with a car that has yaw, steering
+        and a driver. Shows time lost along the lap, steering, side slip, how far the car is from the line.</dd>
+      <dt id="guide-methods">Methods</dt><dd>The same car with different lap time methods, to choose the one that fits the
+        question. <b>QSS</b> (the main result) is fast and good for rankings. <b>Optimal control</b> finds the fastest way
+        round for a perfect driver: the point mass checks QSS, the single and double track add steering, yaw, load transfer
+        and torque vectoring. <b>Compare the methods</b>: does every method agree that a change helps? <b>Robustness</b>:
+        is a gain bigger than what we do not know about the car (grip, mass, aero)? The table on the page says which
+        method to use for which question; <a href="/docs/PERF_METHODS.md" target="_blank" rel="noopener">PERF_METHODS.md</a>
+        explains each method, its hypotheses and limits. The optimal-control models need the package CasADi (the
+        launcher's <b>Repair</b> installs it).</dd>
+      <dt id="guide-energy">Energy</dt><dd>Energy of the endurance, where it goes, endurance points against the power limit,
+        and the power limit for a battery energy you type in.</dd>
+      <dt id="guide-ggv">ggV</dt><dd>How hard the car can accelerate, brake and corner at each speed (in g). Engineers use it
+        to compare cars and as input for other tools.</dd>
+      <dt id="guide-logs">Logs</dt><dd>Car logs (.mf4) or CSV files against the simulation, and the motor efficiency from
+        inverter logs.</dd>
+    </dl>
+  </div>
+
+  <div class="panel" id="g-numbers">
+    <h2>What the numbers mean (and what they do not)</h2>
+    <ul class="glist">
+      <li><b>Points</b> are the competition's formula for each dynamic event (more points for a shorter time, up to
+        50 / 50 / 100 / 250 for acceleration / skidpad / autocross / endurance). The <b>total</b> is the four dynamic events
+        only: no efficiency, no static events (design, cost, presentation).</li>
+      <li>The main result is a <b>quasi-steady-state</b> (QSS) simulation: at every point of the track the car is exactly at
+        its limit. It is a little optimistic; real cars are 3-8 % slower (see Transient). Use it to compare <i>changes</i>,
+        not to promise lap times.</li>
+      <li>The tracks are the FSA 2025 tracks (choose "real" at the top for the measured versions). Different tracks give
+        different absolute times; the ranking of changes usually stays the same.</li>
+      <li><b>Driver utilisation</b> (util) is how much of the tyre grip the driver uses in each event (1 = all of it).</li>
+      <li>The model is as good as its numbers. Tyre grip and mass matter most, so their values should come from tests.</li>
+    </ul>
+  </div>
+
+  <div class="panel" id="g-glossary">
+    <div class="panel-head"><h2>Glossary and all parameters</h2>
+      <input type="search" id="g-filter" placeholder="Search, e.g. mass, aero, gear" aria-label="Search the glossary"></div>
+    <dl class="gdl" id="g-terms">
+      <dt>QSS</dt><dd>Quasi-steady-state: the lap is computed as a chain of steady states (no yaw, no driver delays). Fast and standard for studies.</dd>
+      <dt>Transient</dt><dd>A simulation in time with the car's dynamics and a driver, closer to a real lap.</dd>
+      <dt>Flying lap</dt><dd>A lap that starts at racing speed (skidpad, endurance), unlike a standing start (acceleration, autocross).</dd>
+      <dt>Corner speed</dt><dd>The highest speed at which the car can take a curve without sliding.</dd>
+      <dt>Friction ellipse</dt><dd>A tyre has one budget of grip for braking/accelerating and cornering together; using it for one leaves less for the other.</dd>
+      <dt>Load transfer</dt><dd>Weight moves to the front when braking, rearwards when accelerating, outwards in corners; it changes the grip of each tyre.</dd>
+      <dt>Downforce / drag</dt><dd>Aero force pushing the car down (more grip) and holding it back (less speed). c_z and c_w are their coefficients.</dd>
+      <dt>Sensitivity (P/%)</dt><dd>Points gained by changing a parameter by 1 % in its better direction.</dd>
+      <dt>Power cap</dt><dd>The motor power limit used in the endurance to save energy.</dd>
+      <dt>EF (efficiency factor)</dt><dd>Endurance time² × energy; the efficiency score of the rules is built from it (smaller is better).</dd>
+      <dt>ggV</dt><dd>Acceleration limits (in g) for each speed: drive, brake and corner.</dd>
+      <dt>RMSE</dt><dd>Average size of the difference between log and simulation (root mean square error).</dd>
+      <dt>Setup</dt><dd>A list of changes on top of the baseline car, saved under a name.</dd>
+    </dl>
+    <h3 class="sub">Car parameters</h3>
+    <div class="tablewrap"><table id="g-params"></table></div>
+  </div>
+
+  <div class="panel" id="g-trouble">
+    <h2>Something does not work</h2>
+    <dl class="gdl">
+      <dt>The page does not open / "This site can't be reached"</dt><dd>The Lab is not running: open the <b>Performance
+        Lab</b> window (desktop shortcut or <code>Performance Lab.bat</code>) and press <b>Start and open</b>.</dd>
+      <dt>"unknown parameter ..."</dt><dd>A name in "Other changes" is misspelt. The names are in the parameter table above
+        (column "Name"), e.g. <code>m</code>, <code>c_z</code>, <code>i_trans</code>.</dd>
+      <dt>A change does nothing</dt><dd>Some parameters have no effect in some events (e.g. more power when the car is
+        limited by motor torque). Sensitivity shows "no effect" for those. Check the change is listed in the top bar.</dd>
+      <dt>A study takes long</dt><dd>2-D maps run every combination (8 × 8 = 64 runs ≈ 20 s). Use fewer steps, or Cancel.</dd>
+      <dt>The numbers differ from MATLAB</dt><dd>They should agree exactly for the same changes and competition file. Check
+        both use the same competition (top bar) and efficiency (constant or a map).</dd>
+      <dt>Anything else</dt><dd>In the launcher window, <b>Save a help report</b> and send the zip to the team's software
+        contact. It holds the checks and logs, no car data.</dd>
+    </dl>
+  </div>
+
+  <div class="panel" id="g-more">
+    <h2>More</h2>
+    <ul class="glist">
+      <li><a href="/docs/paper2_performance_lab.pdf" target="_blank" rel="noopener">Technical paper: how the Performance Lab computes (PDF)</a> &ndash; every equation and the checks against MATLAB.</li>
+      <li><a href="/docs/paper1_dv_simulator.pdf" target="_blank" rel="noopener">The driverless simulator that uses the same car (PDF)</a></li>
+      <li><a href="/docs/PERF_APP.md" target="_blank" rel="noopener">Short manual (PERF_APP.md)</a></li>
+      <li><a href="/docs/PERF_METHODS.md" target="_blank" rel="noopener">The lap time methods: purpose, hypotheses, limits (PERF_METHODS.md)</a></li>
+    </ul>
+  </div>
+</section>
+</main>
+
+<datalist id="param-list"></datalist>
+<footer class="foot">
+  <span class="team"><b>Lions</b> Racing Team</span>
+  <span id="foot-src"></span>
+</footer>
+<script src="/static/charts.js"></script>
+<script src="/static/perf.js"></script>
+</body>
+</html>

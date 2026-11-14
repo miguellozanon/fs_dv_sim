@@ -1,0 +1,14 @@
+{
+  "name": "LionsLTS LR26_emrax",
+  "changes": [
+    "m=290",
+    "c_w=1.769636015",
+    "c_z=4.03256705",
+    "aero_bal_f=0.5299881235",
+    "T_motor=200",
+    "i_trans=5",
+    "n_max=8000"
+  ],
+  "notes": "From LionsLTS LR26_emrax.yml; aero areas c_w_a / c_z_a_f / c_z_a_r converted with the LapSim aero_eff 0.8 (drag area kept; LionsLTS applies the efficiency factor to downforce only)",
+  "saved": "2026-11-04 10:03"
+}

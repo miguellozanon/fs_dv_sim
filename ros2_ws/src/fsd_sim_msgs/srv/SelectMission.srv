@@ -1,0 +1,5 @@
+# Select the AS mission (ASStatus.MISSION_* values). Only accepted in AS Off.
+uint8 mission
+---
+bool success
+string message
