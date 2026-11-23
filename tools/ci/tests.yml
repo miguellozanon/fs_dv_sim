@@ -1,0 +1,47 @@
+# Unit tests on every push and pull request.
+#
+# The confidential folders (lapsim/LR26_LapSim, cad/, the LR26 body USDs) are not in git, so the tests that need
+# them skip themselves here; tests/test_testcar.py runs the Performance Lab on a fictional test car instead.
+# ROS 2, Isaac Sim and PyTorch are not installed: those tests skip as well (docs/TEST_PLAN.md).
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: tools/ci/requirements-ci.txt
+
+      - name: Install the Python packages
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r tools/ci/requirements-ci.txt
+
+      - name: Git identity (tests make throw-away commits)
+        run: |
+          git config --global user.name "CI"
+          git config --global user.email "ci@example.invalid"
+
+      - name: Unit tests
+        env:
+          BROWSER: "true"          # never open a browser window
+          MPLBACKEND: Agg
+        run: xvfb-run -a python -m unittest discover -s tests -v

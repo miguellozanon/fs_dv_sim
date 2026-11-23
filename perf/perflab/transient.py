@@ -111,7 +111,15 @@ class _Progress:
 
 
 def run(lab: Lab, event: str, changes=(), competition=None, dt: float = 0.02, track_width: float = 3.0,
-        job=None) -> dict:
+        job=None, line_smoothing=None) -> dict:
+    """line_smoothing: the driver's reference line is a smoothing spline of the track's x, y that stays within
+    this many metres of them (largest smoothing that does). None = automatic: 0.25 m for tracks measured as x, y
+    points (the "real" FSA tracks: their point-to-point noise made the driver far too slow, 112 s against 96 s
+    for QSS on the endurance), 0 (the points as they are) for curvature tables and the basic tracks."""
+    measured = _measured(ev_track_source(lab, event, competition))
+    smooth = (0.25 if measured else 0.0) if line_smoothing in (None, "", "auto") else float(line_smoothing)
+    if not 0.0 <= smooth <= 1.0:
+        raise ValueError("line smoothing between 0 and 1 m")
     t_wall = time.time()
     changes = lab.validate(changes, competition)
     veh, ev = build_vehicle(lab, changes, event, competition)
@@ -120,6 +128,9 @@ def run(lab: Lab, event: str, changes=(), competition=None, dt: float = 0.02, tr
     closure = 0.0
     if trk.closed:
         xy, closure = close_loop(xy)
+    lam = None
+    if smooth > 0:
+        xy, lam = smooth_line(xy, trk.closed, smooth)
     if not 0.005 <= dt <= 0.05:
         raise ValueError("time step between 0.005 and 0.05 s")
     grip = float(ev.util_y)
@@ -133,6 +144,7 @@ def run(lab: Lab, event: str, changes=(), competition=None, dt: float = 0.02, tr
         d0 = (xy[1] - xy[0]) / max(np.linalg.norm(xy[1] - xy[0]), 1e-9)
         back = xy[0] - np.outer(np.arange(10, 0, -1) * 0.5, d0)
         drv.set_reference(np.vstack([back, xy]), False)
+    q = lab.raw(changes, competition, [event])["events"][event]
     car = VehicleModel(veh)
     yaw0 = math.atan2(xy[1, 1] - xy[0, 1], xy[1, 0] - xy[0, 0])
     car.reset(float(xy[0, 0]), float(xy[0, 1]), yaw0)
@@ -219,7 +231,7 @@ def run(lab: Lab, event: str, changes=(), competition=None, dt: float = 0.02, tr
            "driver": {"grip_util": grip, "long_util": min(1.0, float(ev.util_x) / max(grip, 1e-6)),
                       "handling": str(veh.chassis.handling), "yaw_inertia": veh.yaw_inertia,
                       "max_steer_deg": math.degrees(veh.actuators.max_steer)},
-           "dt": dt, "sim_time": t, "wall_s": time.time() - t_wall,
+           "dt": dt, "sim_time": t, "line_smoothing_m": smooth, "measured_track": measured, "wall_s": time.time() - t_wall,
            "trace": {k: np.asarray(v)[sl] for k, v in rec.items()},
            "lap": {"s": lap_s[decimate(len(lap_s), 1500)], "v": lap_v[decimate(len(lap_s), 1500)],
                    "dt": delta[decimate(len(delta), 1500)] if len(delta) else []},
@@ -227,6 +239,52 @@ def run(lab: Lab, event: str, changes=(), competition=None, dt: float = 0.02, tr
     if job is not None:
         job.step(goal, goal, "done")
     return clean(out)
+
+
+def ev_track_source(lab: Lab, event: str, competition=None) -> str:
+    ev = lab.lapsim(competition).comp.events.get(event)
+    return getattr(getattr(ev, "track", None), "source", "") or ""
+
+
+def _measured(path: str) -> bool:
+    """A track file with x, y points only (no curvature column): a measured line."""
+    if not path or not path.lower().endswith(".csv") or not os.path.isfile(path):
+        return False
+    with open(path, encoding="utf-8-sig") as f:
+        head = f.readline().lower()
+    return "kappa" not in head
+
+
+def smooth_line(xy: np.ndarray, closed: bool, max_shift: float):
+    """The smoothest cubic smoothing spline x(s), y(s) of the points that stays within max_shift metres of every
+    point (bisection on the smoothing parameter). Closed lines are wrapped so the fit is periodic."""
+    from scipy.interpolate import make_smoothing_spline  # noqa: PLC0415
+
+    xy = np.asarray(xy, float)
+    sc = np.r_[0.0, np.cumsum(np.hypot(*np.diff(xy, axis=0).T))]
+    keep = np.r_[True, np.diff(sc) > 1e-6]
+    xy, sc = xy[keep], sc[keep]
+    if closed:
+        Lp = sc[-1] + float(np.hypot(*(xy[0] - xy[-1])))
+        P = min(50.0, 0.25 * Lp)
+        pre, post = sc > Lp - P, sc < P
+        S_ = np.r_[sc[pre] - Lp, sc, sc[post] + Lp]
+        cols = [np.r_[xy[pre, c], xy[:, c], xy[post, c]] for c in (0, 1)]
+    else:
+        S_, cols = sc, [xy[:, 0], xy[:, 1]]
+
+    def fit(lam):
+        return np.c_[make_smoothing_spline(S_, cols[0], lam=lam)(sc), make_smoothing_spline(S_, cols[1], lam=lam)(sc)]
+
+    lo, hi, best, lam = -4.0, 4.0, xy, 0.0
+    for _ in range(14):
+        mid = 0.5 * (lo + hi)
+        f = fit(10 ** mid)
+        if float(np.max(np.hypot(*(f - xy).T))) <= max_shift:
+            lo, best, lam = mid, f, 10 ** mid
+        else:
+            hi = mid
+    return best, lam
 
 
 def _score(ev, T):

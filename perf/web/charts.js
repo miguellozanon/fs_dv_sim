@@ -71,7 +71,7 @@ function bisect(xs, x) {
 }
 
 // ------------------------------------------------------------------ line chart
-// opts: {series: [{name, x, y, color?, dash?}], xLabel, yLabel, height, yFmt, xFmt, zero, markers}
+// opts: {series: [{name, x, y, color?, dash?, points? (scatter)}], xLabel, yLabel, height, yFmt, xFmt, zero, markers}
 function lineChart(container, opts) {
   container.innerHTML = "";
   container.classList.add("chart");
@@ -112,6 +112,12 @@ function lineChart(container, opts) {
   if (opts.yLabel) el("text", { x: 12, y: (H - m.b + m.t) / 2, "text-anchor": "middle", class: "lab",
     transform: `rotate(-90 12 ${(H - m.b + m.t) / 2})` }, svg).textContent = opts.yLabel;
   for (const s of series) {
+    if (s.points) {                    // scatter series (measured samples): small dots, no line, no hover
+      const g = el("g", { fill: s.color, "fill-opacity": 0.45 }, svg);
+      for (let i = 0; i < s.x.length; i++) if (isFinite(s.x[i]) && isFinite(s.y[i]) && s.x[i] !== null && s.y[i] !== null)
+        el("circle", { cx: X(s.x[i]).toFixed(1), cy: Y(s.y[i]).toFixed(1), r: 2 }, g);
+      continue;
+    }
     let d = "", pen = false;
     for (let i = 0; i < s.x.length; i++) {
       const x = s.x[i], y = s.y[i];
@@ -136,6 +142,7 @@ function lineChart(container, opts) {
     cross.setAttribute("x1", px); cross.setAttribute("x2", px); cross.setAttribute("visibility", "visible");
     let rows = "";
     series.forEach((s, k) => {
+      if (s.points) return;
       const i = bisect(s.x, xv), y = s.y[i];
       if (i < 0 || y === null || !isFinite(y)) { dots[k].setAttribute("visibility", "hidden"); return; }
       dots[k].setAttribute("cx", X(s.x[i])); dots[k].setAttribute("cy", Y(y)); dots[k].setAttribute("visibility", "visible");

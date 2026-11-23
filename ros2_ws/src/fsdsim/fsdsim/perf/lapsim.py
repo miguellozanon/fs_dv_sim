@@ -486,6 +486,7 @@ def load_competition(path: str) -> Competition:
                 cur.track = track_csv(os.path.normpath(file), bool(opts.get("closed", False)), float(opts.get("ds", 0.5)),
                                       opts.get("name"), float(opts.get("smooth_window", 4.0)),
                                       str(opts.get("method", "smooth")), float(opts.get("curv_filter", 5.0)))
+                cur.track.source = os.path.normpath(file)     # for tools that need to know (not used by the solver)
         elif fld == "score":
             fn, args = _call(expr)
             if fn == "score_def":

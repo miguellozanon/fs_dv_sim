@@ -27,14 +27,22 @@ from fsdsim.logdata.mdf4 import MDF4, resample
 from .lab import REPO, Lab, clean, decimate
 
 G = 9.81
-UPLOADS = os.path.join(REPO, "perf", "uploads")
+UPLOADS = os.environ.get("PERF_LAB_UPLOADS") or os.path.join(REPO, "perf", "uploads")      # env: tests, demos
 RATE_HZ = 20.0
-UNITS = {"kmh": 1 / 3.6, "mps": 1.0, "mph": 0.44704, "g": G, "mps2": 1.0, "rpm_motor": None}
+UNITS = {"kmh": 1 / 3.6, "mps": 1.0, "mph": 0.44704, "g": G, "mps2": 1.0, "rpm_motor": None,
+         "deg": 1.0, "degps": math.pi / 180, "radps": 1.0, "raw": 1.0}
+SIGNALS = ("speed", "ax", "ay", "yaw", "lat", "lon", "brake", "torque")       # what a spec can map
+DEFAULT_UNIT = {"speed": "kmh", "ax": "g", "ay": "g", "yaw": "degps", "lat": "deg", "lon": "deg", "brake": "raw",
+                "torque": "raw"}
 SUGGEST = {
     "speed": re.compile(r"(^|_)(v|speed|vel|velocity|gps_speed|v_kmh|v_mps|groundspeed)(_|$)|vehicle_?speed|act_speed", re.I),
     "ax": re.compile(r"(^|_)(ax|acc_?x|accel_?x|long_?acc)", re.I),
     "ay": re.compile(r"(^|_)(ay|acc_?y|accel_?y|lat_?acc)", re.I),
     "time": re.compile(r"^(t|time|time_s|timestamp)$", re.I),
+    "yaw": re.compile(r"yaw_?rate|(^|_)(r|gz|gyro_?z|wz)(_|$)", re.I),
+    "lat": re.compile(r"(^|_)(lat|latitude)(_|$)", re.I),
+    "lon": re.compile(r"(^|_)(lon|lng|long|longitude)(_|$)", re.I),
+    "brake": re.compile(r"brake_?(press|p)|p_?brake", re.I),
 }
 
 
@@ -156,7 +164,7 @@ def extract(lab: Lab, source_id: str, spec: dict, changes=(), competition=None) 
             raise ValueError(f"no column {tcol!r}")
         if dcol and dcol not in cols:
             raise ValueError(f"no column {dcol!r}")
-        for key in ("speed", "ax", "ay"):
+        for key in SIGNALS:
             c = (spec.get(key) or {}).get("channel")
             if c:
                 if c not in cols:
@@ -174,15 +182,16 @@ def extract(lab: Lab, source_id: str, spec: dict, changes=(), competition=None) 
         else:
             raise ValueError("a CSV log needs a time or a distance column")
         data = {"t": t, "v": v}
-        for key in ("ax", "ay"):
+        for key in SIGNALS[1:]:
             if key in series:
-                data[key] = _unit_value(series[key], units[key].get("unit", "g"), float(units[key].get("scale", 1) or 1), veh)
+                data[key] = _unit_value(series[key], units[key].get("unit", DEFAULT_UNIT[key]),
+                                        float(units[key].get("scale", 1) or 1), veh)
         if s is not None:
             data["s"] = s
     else:
         f = MDF4(path)
         raw = {}
-        for key in ("speed", "ax", "ay"):
+        for key in SIGNALS:
             c = spec.get(key) or {}
             if c.get("channel"):
                 found = [x for x in f.signals(c["channel"]) if not c.get("group") or c["group"] == x[0]]
@@ -194,9 +203,10 @@ def extract(lab: Lab, source_id: str, spec: dict, changes=(), competition=None) 
         grid, d = resample(raw, RATE_HZ)
         data = {"t": grid - grid[0], "v": _unit_value(d["speed"], units["speed"].get("unit", "kmh"),
                                                       float(units["speed"].get("scale", 1) or 1), veh)}
-        for key in ("ax", "ay"):
+        for key in SIGNALS[1:]:
             if key in d:
-                data[key] = _unit_value(d[key], units[key].get("unit", "g"), float(units[key].get("scale", 1) or 1), veh)
+                data[key] = _unit_value(d[key], units[key].get("unit", DEFAULT_UNIT[key]),
+                                        float(units[key].get("scale", 1) or 1), veh)
     # window
     t0, t1 = spec.get("t0"), spec.get("t1")
     m = np.ones(len(data["t"]), bool)

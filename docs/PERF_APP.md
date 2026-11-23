@@ -71,11 +71,11 @@ The files are re-read when they change. The app never writes them.
 | Overview | All events with time, lap time, points, average and top speed, energy and driver utilisation, plus the change against the baseline. Speed, ax, ay and power traces over distance. A track map coloured by speed. CSV export. |
 | Setup | The parameter table (the same as the dashboard's Vehicle setup page, `fsdsim/perf/schema.py`). Free changes such as `mu*1.02` or `autocross.util_y=0.85`. Saved setups. |
 | Studies | **Sensitivity**: ±δ per parameter, a tornado chart and the time change per event (`lts_sensitivity_table`). **Sweep**: one parameter, total and per-event points and times, speed traces. **2-D map**: points over two parameters, with the best point. **Compare**: the active setup against up to seven saved ones, with speed traces and time difference over distance. |
-| Transient | The event driven by the simulator's dynamic vehicle model and reference driver, against the QSS lap. Shows the time lost along the lap, steering, sideslip, lateral offset and ay. Yaw inertia and the steering limit act here; the QSS LapSim does not have them. |
+| Transient | The event driven by the simulator's dynamic vehicle model and reference driver, against the QSS lap. Shows the time lost along the lap, steering, sideslip, lateral offset and ay. Yaw inertia and the steering limit act here; the QSS LapSim does not have them. **Line smoothing**: the driver's line is a smooth curve within this distance of the track's points (automatic: 0.25 m for measured x, y tracks, none for curvature tables). |
 | Methods | The same car with several lap time methods, to choose the one that fits the question (table on the page). **One method, one event**: minimum-time optimal control (point mass, single track, double track ± torque vectoring, fixed or free line) with speed, accelerations, line, steering and sideslip. **Compare the methods**: QSS, point-mass QSS, transient and the OCP models on one event, baseline and one change; whether they agree on its sign. **Robustness**: Monte-Carlo on QSS over the uncertain parameters, spread of the points and probability that a change gains. Details: [PERF_METHODS.md](PERF_METHODS.md). |
-| Energy | Where the energy of an endurance lap goes (drivetrain losses, drag, rolling, friction brakes, recuperation). Endurance points, energy and lap time against the power cap. The cap for a given battery budget (LionsLTS `optimize_power` idea). The efficiency factor T²·E. |
+| Energy | Where the energy of an endurance lap goes (drivetrain losses, drag, rolling, friction brakes, recuperation). Endurance points, energy and lap time against the power cap. The cap for a given battery budget (LionsLTS `optimize_power` idea). The efficiency factor T²·E. **Recuperation**: endurance energy, energy recovered and, with a battery budget, the power cap and endurance points for each maximum regen power. |
 | ggV | Drive and brake limits against lateral acceleration per speed. Choose the tyre limit or an event's driver utilisation. |
-| Logs | Upload `.mf4` or `.csv` (stored in `perf/uploads/`, kept out of git), or use LapSim's reference traces. Map the speed, ax and ay channels; motor rpm can be turned into speed through the gear and tyre. Correlation on distance, with the offset searched within ±30 m: speed RMSE and bias, time difference along the lap. **Powertrain** (MF4 with the inverter channels): efficiency table, loss model, roll-out check. The result can be saved as `lapsim/configs/eta_map_<name>.json`. |
+| Logs | Upload `.mf4` or `.csv` (stored in `perf/uploads/`, kept out of git), or use LapSim's reference traces. Map the speed, ax and ay channels; motor rpm can be turned into speed through the gear and tyre. Correlation on distance, with the offset searched within ±30 m: speed RMSE and bias, time difference along the lap. **Powertrain** (MF4 with the inverter channels): efficiency table, loss model, roll-out check. The result can be saved as `lapsim/configs/eta_map_<name>.json`. **Identify the car from the log** ([LOGGING_SPEC.md](LOGGING_SPEC.md)): *coast-down* → rolling resistance and c_w; *grip use (ggV)* → driver utilisation util_y, util_x; *steady cornering* → grip scale; *track from GPS* → a track file (x, y every 0.5 m) in `perf/uploads/tracks/`. Results are suggestions next to the setup's values; nothing is written to `lr26_params.m`. Extra channels: yaw rate, latitude, longitude, brake pressure. |
 
 **Context bar (top of every page):**
 
@@ -118,9 +118,11 @@ Baseline, FSA 2025 tracks (documentation version):
 | Autocross | 49.94 s | 53.71 s | lateral offset ≤ 0.5 m |
 | Endurance lap | 95.4 s | 100.0 s | |
 
-On the FSA 2025 real tracks, the transient endurance lap is 112 s against 96 s for QSS. The driver computes its
-speed targets from the raw x, y of the real track, while LapSim filters the curvature over 5 m. Use the
-documentation tracks for transient-versus-QSS comparisons until the driver uses the filtered curvature.
+On the FSA 2025 real tracks the transient endurance lap used to be 112 s against 96 s for QSS: the driver followed
+the measured x, y points with their point-to-point noise. Since 15 Nov 2026 its line on measured tracks is
+smoothed (within 0.25 m of the points): autocross 53.5 s (QSS 49.3 s), endurance lap 103.5 s (QSS 96.3 s), never
+off the track. The documentation tracks are unchanged (no smoothing). The lateral offset shown is measured from
+the smoothed line.
 
 The transient endurance lap uses ~35 % less energy than QSS (0.22 against 0.34 kWh). The driver's targets sit
 below the limit, so it cruises at part throttle and brakes less. This is a property of the reference driver,
@@ -162,17 +164,22 @@ perf/perflab/jobs.py     background jobs with progress and cancel
 perf/web/                page (index.html, perf.js, charts.js: own SVG charts, works offline)
 perf/perflab/ocp.py      minimum-time optimal control (CasADi + IPOPT): point mass, single / double track
 perf/perflab/methods.py  method comparison, Monte-Carlo robustness, which method for which question
+perf/perflab/ident.py    parameters from logs: coast-down, grip use, steady cornering, track from GPS
 tests/test_perf_app.py, tests/test_perf_launcher.py, tests/test_perf_ocp.py   tests
+tests/test_testcar.py, tests/fixtures/testcar_lapsim/   the Lab on a fictional car (CI, no confidential data)
 ```
 
 API (POSTs need the header `X-Perf-Lab: 1`):
 
 * `GET /api/info`
 * `POST /api/run {changes, competition}`
-* `POST /api/job {kind: sensitivity|sweep|sweep2d|compare|energy|transient|ocp|methods|monte_carlo, args}`, then
+* `POST /api/job {kind: sensitivity|sweep|sweep2d|compare|energy|regen|transient|ocp|methods|monte_carlo|ident, args}`, then
   `GET /api/job/<id>`
 * `GET /api/methods` (the methods, the guidance table, whether CasADi is installed)
 * `POST /api/ggv`
-* `POST /api/logs/{upload,inspect,correlate,powertrain,save_map}`
+* `POST /api/logs/{upload,inspect,correlate,powertrain,save_map,save_track}`
 * `POST /api/setup/save`
 * `POST /api/eta_map`
+
+**Environment variables** (tests, demos): `FSG_LAPSIM_DIR` another LapSim folder (e.g. the test car
+`tests/fixtures/testcar_lapsim`), `PERF_LAB_UPLOADS` another folder for uploaded logs.

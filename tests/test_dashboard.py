@@ -13,6 +13,8 @@ import urllib.request
 import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NEEDS_LAPSIM = unittest.skipUnless(os.path.isfile(os.path.join(ROOT, "lapsim", "LR26_LapSim", "config", "lr26_params.m")),
+                                   "lapsim/LR26_LapSim not present (confidential, not in git): CI runs without it")
 SRC = os.path.join(ROOT, "ros2_ws", "src")
 sys.path[:0] = [os.path.join(SRC, "fsdsim"), os.path.join(SRC, "fsd_dashboard"), os.path.join(SRC, "fsd_sim_bridge")]
 
@@ -411,6 +413,7 @@ class TestRosNode(unittest.TestCase):
         self.assertEqual(d["prediction"]["event"], "skidpad")
         self.assertGreater(d["prediction"]["lapsim"]["time"], 5.15)   # heavier than the 5.154 s baseline
 
+    @NEEDS_LAPSIM
     def test_vehicle_setup_publishes_vehicle_set(self):
         n = self.n
         self.assertIsNotNone(n.setup, "Vehicle setup should load lapsim/LR26_LapSim")

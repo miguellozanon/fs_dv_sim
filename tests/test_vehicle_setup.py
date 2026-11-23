@@ -15,6 +15,8 @@ import urllib.request
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NEEDS_LAPSIM = unittest.skipUnless(os.path.isfile(os.path.join(ROOT, "lapsim", "LR26_LapSim", "config", "lr26_params.m")),
+                                   "lapsim/LR26_LapSim not present (confidential, not in git): CI runs without it")
 SRC = os.path.join(ROOT, "ros2_ws", "src")
 sys.path[:0] = [os.path.join(SRC, "fsdsim"), os.path.join(SRC, "fsd_dashboard"), os.path.join(SRC, "fsd_sim_bridge")]
 
@@ -32,6 +34,7 @@ except OSError:
     pass
 
 
+@NEEDS_LAPSIM
 class TestLapSimFolder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -123,6 +126,7 @@ class TestVehicleSwap(unittest.TestCase):
         self.assertIn('"/sim/vehicle_set"', ri)
 
 
+@NEEDS_LAPSIM
 class TestMatlabRunner(unittest.TestCase):
     def test_job_with_fake_matlab(self):
         from fsd_dashboard import matlab_runner as mr
@@ -182,6 +186,7 @@ class TestMatlabRunner(unittest.TestCase):
         self.assertEqual(sorted(paths, key=_release_key)[-1], paths[1])
 
 
+@NEEDS_LAPSIM
 class TestSetupDashboard(unittest.TestCase):
     """Offline demo + HTTP API, as the browser uses it."""
 

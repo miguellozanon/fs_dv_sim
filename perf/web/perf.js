@@ -395,7 +395,7 @@ DRAW.studies = () => { drawSens(); drawSweep(); drawMap2(); drawCompare(); };
 
 // ------------------------------------------------------------------ transient
 $("tr-run").onclick = async () => {
-  const r = await runJob("tr-job", "transient", { event: $("tr-event").value, dt: +$("tr-dt").value, track_width: +$("tr-w").value, changes: S.changes });
+  const r = await runJob("tr-job", "transient", { event: $("tr-event").value, dt: +$("tr-dt").value, track_width: +$("tr-w").value, line_smoothing: $("tr-smooth").value === "" ? null : +$("tr-smooth").value, changes: S.changes });
   if (!r) return;
   S.results.tr = r; $("tr-out").hidden = false; drawTransient();
 };
@@ -419,6 +419,7 @@ function drawTransient() {
   lineChart($("tr-lat"), { series: [{ name: "offset (left +)", x: t.s, y: t.lat }], xLabel: "distance [m]", yLabel: "m", height: 160, zero: true });
   lineChart($("tr-ay"), { series: [{ name: "ay", x: t.s, y: t.ay }], xLabel: "distance [m]", yLabel: "g", height: 160, zero: true });
   $("tr-note").innerHTML = `Driver: grip utilisation ${fmt(r.driver.grip_util, 2)} (the event's util_y), longitudinal ${fmt(r.driver.long_util, 2)}; vehicle model ${esc(r.driver.handling)}, yaw inertia ${fmt(r.driver.yaw_inertia)} kg m², steering limit ${fmt(r.driver.max_steer_deg, 1)}°; time step ${r.dt} s; ${fmt(r.wall_s, 1)} s to compute.` +
+    (r.line_smoothing_m > 0 ? ` The driver's line is smoothed (within ${fmt(r.line_smoothing_m, 2)} m of the track's points${r.measured_track ? ": a measured x, y track" : ""}); the lateral offset is measured from that line.` : "") +
     (r.closure_gap_m > 0 ? ` The track's x, y did not close (${fmt(r.closure_gap_m, 1)} m gap, a curvature-only track): the gap was spread along the lap.` : "") +
     (r.closed ? " Distance of the charts: the timed (second) lap." : "");
 }
@@ -589,7 +590,27 @@ $("en-csv").onclick = () => {
   downloadCSV("endurance_power_cap.csv", ["cap_kW", "lap_s", "endurance_s", "E_lap_kWh", "E_total_kWh", "EF", "points", "v_max_mps"],
     r.sweep.map((x) => [x.cap_kw, x.t_lap, x.T, x.E_lap_kwh, x.E_total_kwh, x.EF, x.points, x.v_max]));
 };
-DRAW.energy = drawEnergy;
+
+$("rg-run").onclick = async () => {
+  const vals = $("rg-vals").value.trim() ? $("rg-vals").value.trim().split(/[\s,;]+/).map(Number) : null;
+  const r = await runJob("rg-job", "regen", { regen_kw: vals, eta_regen: $("rg-eta").value === "" ? null : +$("rg-eta").value,
+    budget_kwh: +$("rg-budget").value || null, changes: S.changes });
+  if (!r) return;
+  S.results.rg = r; $("rg-out").hidden = false; drawRegen();
+};
+function drawRegen() {
+  const r = S.results.rg; if (!r || $("rg-out").hidden) return;
+  const x = r.rows.map((w) => w.P_regen_kw), bud = !!r.budget_kwh;
+  lineChart($("rg-e"), { series: [{ name: "energy", x, y: r.rows.map((w) => w.E_total_kwh) }].concat(bud ? [{ name: "budget", x, y: x.map(() => r.budget_kwh), dash: true }] : []),
+    xLabel: "maximum regen power [kW]", yLabel: "kWh", height: 200 });
+  if (bud) lineChart($("rg-pts"), { series: [{ name: "endurance points", x, y: r.rows.map((w) => w.budget.points) }], xLabel: "maximum regen power [kW]", yLabel: "points", height: 200 });
+  else $("rg-pts").innerHTML = `<p class="hint">Give a battery budget to see the points.</p>`;
+  $("rg-table").innerHTML = `<thead><tr><th class="num">P_regen [kW]</th><th class="num">Energy [kWh]</th><th class="num">Recovered per lap [kWh]</th><th class="num">Friction brakes per lap [kWh]</th>${bud ? `<th class="num">Power cap for ${fmt(r.budget_kwh, 1)} kWh [kW]</th><th class="num">Time [s]</th><th class="num">Points</th>` : `<th class="num">Time [s]</th><th class="num">Points</th>`}</tr></thead><tbody>` +
+    r.rows.map((w) => `<tr${Math.abs(w.P_regen_kw - r.setup_P_regen_kw) < 1e-6 ? ' class="hl"' : ""}><td class="num">${fmt(w.P_regen_kw)}</td><td class="num">${fmt(w.E_total_kwh, 3)}</td><td class="num">${fmt(w.regen_lap_kwh, 4)}</td><td class="num">${fmt(w.brakes_lap_kwh, 4)}</td>` +
+      (bud ? `<td class="num">${w.budget.limited ? fmt(w.budget.cap_kw, 1) : "no limit"}</td><td class="num">${fmt(w.budget.T, 1)}</td><td class="num">${fmt(w.budget.points, 2)}</td>` : `<td class="num">${fmt(w.T, 1)}</td><td class="num">${fmt(w.points, 2)}</td>`) + "</tr>").join("") + "</tbody>";
+  $("rg-note").textContent = `Setup: P_regen ${fmt(r.setup_P_regen_kw)} kW, regen efficiency ${fmt(r.eta_regen, 2)} (wheel to accumulator). "No limit": the full motor power fits the budget.`;
+}
+DRAW.energy = () => { drawEnergy(); drawRegen(); };
 
 // ------------------------------------------------------------------ ggv
 $("gg-run").onclick = async () => {
@@ -659,6 +680,10 @@ async function inspectLog() {
     $("lg-ay").innerHTML = opts(i.suggest.ay, "none");
     $("lg-t").innerHTML = opts(i.suggest.time, "none");
     $("lg-s").innerHTML = opts(i.suggest.distance, "none");
+    $("lg-r").innerHTML = opts(i.suggest.yaw, "none");
+    $("lg-lat").innerHTML = opts(i.suggest.lat, "none");
+    $("lg-lon").innerHTML = opts(i.suggest.lon, "none");
+    $("lg-br").innerHTML = opts(i.suggest.brake, "none");
     const uo = (list, sel) => list.map(([v, l]) => `<option value="${v}" ${v === sel ? "selected" : ""}>${l}</option>`).join("");
     const vname = (i.suggest.speed || "").toLowerCase();
     $("lg-vu").innerHTML = uo(UNIT_SPEED, /kmh|km_h/.test(vname) ? "kmh" : /mps|m_s/.test(vname) ? "mps" : /act_speed|rpm/.test(vname) ? "rpm_motor" : "kmh");
@@ -670,7 +695,9 @@ async function inspectLog() {
 function logSpec() {
   const ch = (id) => { const v = $(id).value; return v === "" ? null : S.logInfo.channels[+v]; };
   const sig = (id, uid) => { const c = ch(id); return c ? { channel: c.name, group: c.group || "", unit: $(uid).value } : null; };
-  return { speed: sig("lg-v", "lg-vu"), ax: sig("lg-ax", "lg-axu"), ay: sig("lg-ay", "lg-ayu"),
+  const raw = (id, unit) => { const c = ch(id); return c ? { channel: c.name, group: c.group || "", unit } : null; };
+  return { speed: sig("lg-v", "lg-vu"), ax: sig("lg-ax", "lg-axu"), ay: sig("lg-ay", "lg-ayu"), yaw: sig("lg-r", "lg-ru"),
+    lat: raw("lg-lat", "deg"), lon: raw("lg-lon", "deg"), brake: raw("lg-br", "raw"),
     time: ch("lg-t") ? ch("lg-t").name : "", distance: ch("lg-s") ? ch("lg-s").name : "", t0: $("lg-t0").value, t1: $("lg-t1").value };
 }
 $("lg-run").onclick = async () => {
@@ -732,7 +759,77 @@ $("pt-run").onclick = async () => {
     };
   } catch (e) { out.innerHTML = `<p class="msg err">${esc(e.message)}</p>`; }
 };
-DRAW.logs = drawLog;
+
+// ------------------------------------------------------------------ identification
+function idToolChanged() {
+  const t = $("id-tool").value;
+  $("id-radius-f").hidden = t !== "steady"; $("id-closed-f").hidden = t !== "track";
+}
+$("id-tool").addEventListener("change", idToolChanged);
+idToolChanged();
+$("id-run").onclick = async () => {
+  if (!$("lg-src").value || !S.logInfo) { showErr("lg-msg", new Error("choose a log first")); return; }
+  const t = $("id-tool").value;
+  const r = await runJob("id-job", "ident", { tool: t, source: $("lg-src").value, spec: logSpec(), changes: S.changes,
+    args: { radius: $("id-radius").value || null, closed: $("id-closed").value === "auto" ? "auto" : $("id-closed").value === "1" } });
+  if (!r) return;
+  S.results.id = r; $("id-out").hidden = false; drawIdent();
+};
+function drawIdent() {
+  const r = S.results.id; if (!r || $("id-out").hidden) return;
+  const K = (t, v, u, sub, warn) => kpiBox(t, v, u, sub, warn);
+  const warn = r.warnings || [];
+  $("id-warn").hidden = !warn.length; $("id-warn").textContent = warn.join(" ");
+  $("id-save").hidden = r.tool !== "track";
+  const sug = (r.suggest || []).map((x) => `<code>${esc(x)}</code>`).join(" ");
+  if (r.tool === "coastdown") {
+    $("id-kpis").innerHTML = K("Rolling resistance f_roll", fmt(r.f_roll, 4), "", `setup ${fmt(r.setup.f_roll, 4)}`) +
+      K("Drag coefficient c_w", fmt(r.c_w, 3), "", `setup ${fmt(r.setup.c_w, 3)} · c_w·A ${fmt(r.cwA, 3)} m²`) +
+      K("Fit residual", fmt(r.rms, 3), "m/s²", `${r.n} samples, ${fmt(r.v_range_kmh[0], 0)}–${fmt(r.v_range_kmh[1], 0)} km/h`);
+    $("id-c1t").innerHTML = `Deceleration against speed <span class="unit">m/s²</span>`;
+    lineChart($("id-c1"), { series: [{ name: "log", x: r.points.v, y: r.points.a, points: true }, { name: "fit", x: r.fit.v, y: r.fit.a }, { name: "setup", x: r.fit.v, y: r.fit.model, dash: true }],
+      xLabel: "speed [km/h]", yLabel: "m/s²", height: 240 });
+    $("id-c2t").textContent = ""; $("id-c2").innerHTML = "";
+  } else if (r.tool === "grip_use") {
+    $("id-kpis").innerHTML = K("Lateral utilisation util_y", r.util_y == null ? "–" : fmt(r.util_y, 3), "", `setup ${fmt(r.setup.util_y, 2)} · ${r.n_lat} cornering samples`, r.util_y > 1.05) +
+      K("Longitudinal util_x", r.util_x == null ? "–" : fmt(r.util_x, 3), "", `braking ${r.util_x_brake == null ? "–" : fmt(r.util_x_brake, 3)} · traction ${r.util_x_traction == null ? "–" : fmt(r.util_x_traction, 3)}`) +
+      K("Percentile", fmt(r.pct, 0), "%", "of the share of the model limit");
+    const m = r.model;
+    $("id-c1t").innerHTML = `Lateral acceleration against speed <span class="unit">g</span>`;
+    lineChart($("id-c1"), { series: [{ name: "log", x: r.points.v, y: r.points.ay, points: true }, { name: "model limit (tyres)", x: m.v, y: m.ay_max }],
+      xLabel: "speed [km/h]", yLabel: "g", height: 240 });
+    $("id-c2t").innerHTML = `Longitudinal acceleration against speed <span class="unit">g</span>`;
+    lineChart($("id-c2"), { series: [{ name: "log", x: r.points.v, y: r.points.ax, points: true }, { name: "drive limit", x: m.v, y: m.drive }, { name: "brake limit", x: m.v, y: m.brake.map((b) => -b) }],
+      xLabel: "speed [km/h]", yLabel: "g", height: 240, zero: true });
+  } else if (r.tool === "steady") {
+    $("id-kpis").innerHTML = K("Grip scale", fmt(r.mu_scale, 3), "×", `muy ${fmt(r.muy, 3)} (setup ${fmt(r.setup.muy, 3)})`) +
+      K("Max steady ay", fmt(r.ay_max_g, 2), "g", `at ${fmt(r.v_at_max_kmh, 0)} km/h · from ${esc(r.source)}`) +
+      K("Steady samples", fmt(r.n, 0), "", "speed nearly constant, ay > 0.5 g");
+    $("id-c1t").innerHTML = `Steady lateral acceleration against speed <span class="unit">g</span>`;
+    lineChart($("id-c1"), { series: [{ name: "log (steady)", x: r.points.v, y: r.points.ay, points: true }, { name: "setup", x: r.model.v, y: r.model.ay, dash: true }, { name: `grip × ${fmt(r.mu_scale, 3)}`, x: r.model.v, y: r.model.ay_fit }],
+      xLabel: "speed [km/h]", yLabel: "g", height: 240 });
+    $("id-c2t").textContent = ""; $("id-c2").innerHTML = "";
+  } else {
+    $("id-kpis").innerHTML = K("Length", fmt(r.L, 1), "m", r.closed ? `closed lap · ${fmt(r.turns, 2)} turn(s)` : "open") +
+      K("Gap at the start", fmt(r.closure_gap_m, 2), "m", r.closed ? "where the lap was cut" : "start to end") +
+      K("Max curvature", fmt(r.k_max, 3), "1/m", `tightest radius ${fmt(1 / Math.max(r.k_max, 1e-9), 1)} m`);
+    $("id-c1t").innerHTML = `Track coloured by curvature <span class="unit">1/m</span>, GPS points as the thin line`;
+    trackMap($("id-c1"), { x: r.trace.x, y: r.trace.y, v: r.trace.kappa.map(Math.abs), s: null, label: "|curvature|", unit: "1/m", height: 360,
+      path: { x: r.raw.x, y: r.raw.y } });
+    $("id-c2t").innerHTML = `Curvature <span class="unit">1/m</span>`;
+    lineChart($("id-c2"), { series: [{ name: "curvature", x: r.trace.s, y: r.trace.kappa }], xLabel: "distance [m]", yLabel: "1/m", height: 240, zero: true });
+  }
+  $("id-note").innerHTML = (sug ? `Suggested change (Setup page, or compare it first): ${sug}. ` : "") +
+    (r.tool === "track" ? "Saved tracks go to perf/uploads/tracks (x, y every 0.5 m). Copy the file into lapsim/LR26_LapSim/tracks and add it to a competition file with lts_track_csv to use it." : "");
+}
+$("id-save-btn").onclick = async () => {
+  try {
+    const r = await api("/api/logs/save_track", { source: $("lg-src").value, spec: logSpec(), name: $("id-name").value.trim(),
+      overwrite: $("id-over").checked, closed: $("id-closed").value === "auto" ? "auto" : $("id-closed").value === "1", changes: S.changes, competition: S.comp });
+    showMsg("lg-msg", r.message);
+  } catch (e) { showErr("lg-msg", e); }
+};
+DRAW.logs = () => { drawLog(); drawIdent(); };
 
 // ------------------------------------------------------------------ guide
 function buildGuide() {

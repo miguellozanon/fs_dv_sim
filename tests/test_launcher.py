@@ -11,6 +11,8 @@ from unittest import mock
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NEEDS_LAPSIM = unittest.skipUnless(os.path.isfile(os.path.join(ROOT, "lapsim", "LR26_LapSim", "config", "lr26_params.m")),
+                                   "lapsim/LR26_LapSim not present (confidential, not in git): CI runs without it")
 sys.path.insert(0, os.path.join(ROOT, "tools", "launcher"))
 os.environ.setdefault("FSG_LAUNCHER_DIR", tempfile.mkdtemp(prefix="fsg-launcher-test-"))
 
@@ -216,6 +218,7 @@ class TestGpuAndShare(unittest.TestCase):
 
 
 
+@NEEDS_LAPSIM
 class TestVehicleSetup(unittest.TestCase):
     """Vehicle setup before the start: LapSim prediction, validation, RL coverage, saved configurations."""
 
@@ -331,6 +334,7 @@ print("fake MATLAB done")
 """
 
 
+@NEEDS_LAPSIM
 class TestMatlab(unittest.TestCase):
     """MATLAB from the launcher and the dashboard: run LR26_LapSim, open its files and results."""
 

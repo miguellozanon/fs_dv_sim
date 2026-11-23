@@ -20,7 +20,7 @@ models/cones/*/data/
 
 # Confidential, never in git (team decision 13 Nov 2026: code + trained models only). They stay on the team drive
 # (docs/INSTALL.md step 2); tools/git_push.py refuses to push them even if these lines are removed.
-cad/
+/cad/
 *.stp
 *.step
 *.STP

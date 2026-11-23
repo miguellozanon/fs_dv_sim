@@ -26,7 +26,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from perflab import REPO  # noqa: E402
-from perflab import energy, logs, methods, ocp, studies, transient  # noqa: E402
+from perflab import energy, ident, logs, methods, ocp, studies, transient  # noqa: E402
 from perflab.jobs import Runner  # noqa: E402
 from perflab.lab import Lab, clean  # noqa: E402
 
@@ -35,7 +35,8 @@ BRAND = Path(REPO) / "ros2_ws" / "src" / "fsd_dashboard" / "fsd_dashboard" / "we
 DOCS = {"paper1_dv_simulator.pdf": Path(REPO) / "docs" / "paper" / "paper1_dv_simulator.pdf",
         "paper2_performance_lab.pdf": Path(REPO) / "docs" / "paper" / "paper2_performance_lab.pdf",
         "PERF_APP.md": Path(REPO) / "docs" / "PERF_APP.md",
-        "PERF_METHODS.md": Path(REPO) / "docs" / "PERF_METHODS.md"}      # the documents the guide links to (nothing else)
+        "PERF_METHODS.md": Path(REPO) / "docs" / "PERF_METHODS.md",
+        "LOGGING_SPEC.md": Path(REPO) / "docs" / "LOGGING_SPEC.md"}      # the documents the guide links to (nothing else)
 MAX_UPLOAD = 1 << 30          # 1 GB
 VERSION = "1.0"
 
@@ -50,13 +51,18 @@ JOBS = {
     "energy": lambda lab, job, a: energy.analyse(lab, a.get("changes", []), a.get("budget_kwh") or None,
                                                  a.get("caps_kw") or None, a.get("competition"), job),
     "transient": lambda lab, job, a: transient.run(lab, str(a["event"]), a.get("changes", []), a.get("competition"),
-                                                   float(a.get("dt", 0.02)), float(a.get("track_width", 3.0)), job),
+                                                   float(a.get("dt", 0.02)), float(a.get("track_width", 3.0)), job,
+                                                   a.get("line_smoothing")),
+    "regen": lambda lab, job, a: energy.regen_study(lab, a.get("changes", []), a.get("regen_kw"), a.get("budget_kwh") or None,
+                                                   a.get("eta_regen"), a.get("competition"), job),
     "ocp": lambda lab, job, a: ocp.run(lab, str(a["event"]), str(a.get("model", "point_mass")), a.get("changes", []),
                                        a.get("competition"), float(a.get("track_width", 3.5)), a.get("ds") or None,
                                        bool(a.get("use_event_util", True)), bool(a.get("torque_vectoring", False)),
                                        bool(a.get("fixed_line", True)), int(a.get("max_iter", 3000)), job),
     "methods": lambda lab, job, a: methods.compare(lab, str(a["event"]), str(a.get("change") or ""), a.get("methods"),
                                                    a.get("changes", []), a.get("competition"), job),
+    "ident": lambda lab, job, a: ident.run_tool(lab, str(a["tool"]), str(a["source"]), a.get("spec") or {}, a.get("args"),
+                                                a.get("changes", []), a.get("competition"), job),
     "monte_carlo": lambda lab, job, a: methods.monte_carlo(lab, int(a.get("n", 200)), str(a.get("change") or ""),
                                                            a.get("uncertainty"), a.get("changes", []),
                                                            a.get("competition"), int(a.get("seed", 1)), job),
@@ -207,6 +213,12 @@ def make_handler(app: App, shutdown):
                     where = logs.save_eta_map(lab, str(req.get("source")), str(req.get("name") or ""), req.get("changes", []), comp,
                                               float(req.get("motors_per_axle", 2.0)), bool(req.get("overwrite")))
                     return self._json({"ok": True, "message": f"saved to {where}", "eta_maps": lab.eta_maps()})
+                if path == "/api/logs/save_track":
+                    c = req.get("closed")
+                    where = ident.save_track(lab, str(req.get("source")), req.get("spec") or {}, str(req.get("name") or ""),
+                                             None if c in (None, "", "auto") else bool(c), None, bool(req.get("overwrite")),
+                                             req.get("changes", []), comp)
+                    return self._json({"ok": True, "message": f"saved to {os.path.relpath(where, REPO)}"})
                 if path == "/api/quit":
                     threading.Thread(target=shutdown, daemon=True).start()
                     return self._json({"ok": True, "message": "Performance Lab stopped; you can close this tab"})

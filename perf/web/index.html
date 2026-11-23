@@ -246,6 +246,7 @@
       <label class="field">Event <select id="tr-event"></select></label>
       <label class="field">Time step [s] <input id="tr-dt" type="number" value="0.02" min="0.005" max="0.05" step="0.005"></label>
       <label class="field">Track width [m] <input id="tr-w" type="number" value="3" min="2" max="8" step="0.5"></label>
+      <label class="field" title="The driver's line: a smooth curve within this distance of the track's points. Empty = automatic: 0.25 m for measured x, y tracks, none for curvature tables.">Line smoothing [m] <input id="tr-smooth" type="number" placeholder="auto" min="0" max="1" step="0.05"></label>
       <button type="button" class="btn primary" id="tr-run">Run</button>
     </div>
     <div class="job" id="tr-job" hidden></div>
@@ -395,6 +396,24 @@
       </div>
     </div>
   </div>
+  <div class="panel">
+    <h2>Recuperation</h2>
+    <p class="hint">The endurance with each maximum regen power (at the wheels). The lap time does not change, the energy does; with a battery budget the saved energy allows a higher power cap, and that gains endurance points. Efficiency points are not included yet (the formula is not in the competition files).</p>
+    <div class="row">
+      <label class="field">Regen powers [kW] <input id="rg-vals" placeholder="0 5 10 15 20 30 40 60 80" size="22" spellcheck="false"></label>
+      <label class="field">Regen efficiency <input id="rg-eta" type="number" min="0" max="1" step="0.05" placeholder="setup"></label>
+      <label class="field">Battery budget [kWh] <input id="rg-budget" type="number" step="0.1" min="0" placeholder="optional"></label>
+      <button type="button" class="btn primary" id="rg-run">Run</button>
+    </div>
+    <div class="job" id="rg-job" hidden></div>
+    <div id="rg-out" hidden>
+      <div class="twocol">
+        <div><h3 class="ch">Endurance energy, all laps <span class="unit">kWh</span></h3><div id="rg-e"></div></div>
+        <div><h3 class="ch" id="rg-pts-title">Endurance points within the budget</h3><div id="rg-pts"></div></div>
+      </div>
+      <div class="tablewrap"><table class="ptable" id="rg-table"></table></div>
+      <p class="note" id="rg-note"></p>
+    </div>
 </section>
 
 <!-- ============================================================== ggv -->
@@ -431,6 +450,10 @@
           <span>Speed</span><select id="lg-v"></select><select id="lg-vu"></select>
           <span>Long. accel.</span><select id="lg-ax"></select><select id="lg-axu"></select>
           <span>Lat. accel.</span><select id="lg-ay"></select><select id="lg-ayu"></select>
+          <span>Yaw rate</span><select id="lg-r"></select><select id="lg-ru"><option value="degps">deg/s</option><option value="radps">rad/s</option></select>
+          <span>Latitude</span><select id="lg-lat"></select><span class="muted">deg</span>
+          <span>Longitude</span><select id="lg-lon"></select><span class="muted">deg</span>
+          <span>Brake pressure</span><select id="lg-br"></select><span class="muted">any unit</span>
           <span class="csvonly">Time</span><select id="lg-t" class="csvonly"></select><span class="csvonly"></span>
           <span class="csvonly">Distance</span><select id="lg-s" class="csvonly"></select><span class="csvonly"></span>
         </div>
@@ -451,6 +474,36 @@
         <button type="button" class="btn" id="pt-run">Analyse</button>
       </div>
       <div id="pt-out" hidden></div>
+    </div>
+  </div>
+  <div class="panel" id="id-panel">
+    <h2>Identify the car from the log</h2>
+    <p class="hint">Model parameters from test-day runs (what to log and how: <a href="/docs/LOGGING_SPEC.md" target="_blank" rel="noopener">LOGGING_SPEC.md</a>). Choose the log, its channels and the time window of one run above. The result is a suggestion next to the setup's value: nothing is changed in lr26_params.m.</p>
+    <div class="row">
+      <label class="field">Tool <select id="id-tool">
+        <option value="coastdown">Coast-down: drag and rolling resistance</option>
+        <option value="grip_use">Grip use (ggV): driver utilisation</option>
+        <option value="steady">Steady cornering: grip</option>
+        <option value="track">Track from GPS</option>
+      </select></label>
+      <label class="field" id="id-radius-f">Circle radius [m] <input id="id-radius" type="number" step="0.1" min="2" placeholder="if no ay / yaw rate"></label>
+      <label class="field" id="id-closed-f">Lap <select id="id-closed"><option value="auto">detect</option><option value="1">closed</option><option value="0">open</option></select></label>
+      <button type="button" class="btn primary" id="id-run">Run</button>
+    </div>
+    <div class="job" id="id-job" hidden></div>
+    <div id="id-out" hidden>
+      <div class="kpis" id="id-kpis"></div>
+      <p class="msg err" id="id-warn" hidden></p>
+      <div class="twocol">
+        <div><h3 class="ch" id="id-c1t"></h3><div id="id-c1"></div></div>
+        <div><h3 class="ch" id="id-c2t"></h3><div id="id-c2"></div></div>
+      </div>
+      <div class="row" id="id-save" hidden>
+        <label class="field">Track name <input id="id-name" placeholder="e.g. Hockenheim_test_2027" spellcheck="false"></label>
+        <label class="check"><input type="checkbox" id="id-over"> replace</label>
+        <button type="button" class="btn" id="id-save-btn">Save track</button>
+      </div>
+      <p class="note" id="id-note"></p>
     </div>
   </div>
   <div id="lg-out" hidden>
@@ -556,11 +609,15 @@
         explains each method, its hypotheses and limits. The optimal-control models need the package CasADi (the
         launcher's <b>Repair</b> installs it).</dd>
       <dt id="guide-energy">Energy</dt><dd>Energy of the endurance, where it goes, endurance points against the power limit,
-        and the power limit for a battery energy you type in.</dd>
+        and the power limit for a battery energy you type in. <b>Recuperation</b>: how much energy each regen power saves,
+        and with a battery budget how many endurance points that buys.</dd>
       <dt id="guide-ggv">ggV</dt><dd>How hard the car can accelerate, brake and corner at each speed (in g). Engineers use it
         to compare cars and as input for other tools.</dd>
       <dt id="guide-logs">Logs</dt><dd>Car logs (.mf4) or CSV files against the simulation, and the motor efficiency from
-        inverter logs.</dd>
+        inverter logs. <b>Identify the car from the log</b> turns test-day runs into model numbers: a coast-down gives
+        drag and rolling resistance, any fast running gives how much of the grip the driver used, a steady circle gives
+        the grip, and a GPS lap gives a track file. What to log and how to run the test day:
+        <a href="/docs/LOGGING_SPEC.md" target="_blank" rel="noopener">LOGGING_SPEC.md</a>.</dd>
     </dl>
   </div>
 
@@ -625,6 +682,7 @@
       <li><a href="/docs/paper2_performance_lab.pdf" target="_blank" rel="noopener">Technical paper: how the Performance Lab computes (PDF)</a> &ndash; every equation and the checks against MATLAB.</li>
       <li><a href="/docs/paper1_dv_simulator.pdf" target="_blank" rel="noopener">The driverless simulator that uses the same car (PDF)</a></li>
       <li><a href="/docs/PERF_APP.md" target="_blank" rel="noopener">Short manual (PERF_APP.md)</a></li>
+      <li><a href="/docs/LOGGING_SPEC.md" target="_blank" rel="noopener">What to log on the car and the test-day plan (LOGGING_SPEC.md)</a></li>
       <li><a href="/docs/PERF_METHODS.md" target="_blank" rel="noopener">The lap time methods: purpose, hypotheses, limits (PERF_METHODS.md)</a></li>
     </ul>
   </div>

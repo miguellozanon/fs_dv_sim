@@ -12,6 +12,8 @@ import unittest
 import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NEEDS_LAPSIM = unittest.skipUnless(os.path.isfile(os.path.join(ROOT, "lapsim", "LR26_LapSim", "config", "lr26_params.m")),
+                                   "lapsim/LR26_LapSim not present (confidential, not in git): CI runs without it")
 SRC = os.path.join(ROOT, "ros2_ws", "src")
 sys.path[:0] = [os.path.join(SRC, "fsdsim"), os.path.join(ROOT, "tools")]
 
@@ -64,6 +66,7 @@ class TestSplineTrack(unittest.TestCase):
         np.testing.assert_allclose(out, 3.0)
 
 
+@NEEDS_LAPSIM
 class TestRealTracks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -103,6 +106,7 @@ class TestRealTracks(unittest.TestCase):
             self.assertIn(k, r)
 
 
+@NEEDS_LAPSIM
 class TestStrategy(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -126,6 +130,7 @@ class TestStrategy(unittest.TestCase):
         self.assertLess(a["E_total_kwh"], b["E_total_kwh"])
 
 
+@NEEDS_LAPSIM
 class TestVehicleImport(unittest.TestCase):
     def load(self, name):
         with open(os.path.join(DATA, name), encoding="utf-8") as f:
@@ -285,6 +290,7 @@ class TestMdf4(unittest.TestCase):
         self.assertGreater(len(f.groups), 0)
 
 
+@NEEDS_LAPSIM
 class TestExport(unittest.TestCase):
     def test_csv_columns_and_energy(self):
         sim = L.LapSim.load(LAPSIM)
@@ -322,6 +328,7 @@ class TestTrackImport(unittest.TestCase):
         self.assertAlmostEqual(xy[1, 1], 111.2, delta=0.5)         # 0.001 deg of latitude ~ 111 m
         self.assertAlmostEqual(xy[3, 0], 111.2 * np.cos(np.radians(48.0)), delta=0.5)
 
+    @NEEDS_LAPSIM
     def test_line_and_cones_from_real_endurance(self):
         with tempfile.TemporaryDirectory() as d:
             line, cones = os.path.join(d, "line.csv"), os.path.join(d, "cones.csv")

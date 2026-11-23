@@ -593,8 +593,15 @@ def run(lab: Lab, event: str, model: str = "point_mass", changes=(), competition
     chain = [] if model == "point_mass" else ["single_track"] if model == "single_track" else ["single_track", model]
     for mdl in chain:                                # each model starts from the solution of the simpler one
         guess = sol if mdl == "single_track" else _guess_from_dynamic(sol)
-        sol = solve_dynamic(car, tr, half, v0, guess, mdl, torque_vectoring and mdl == "double_track", util,
-                            max_iter, job, verbose, fixed_line)
+        tv = torque_vectoring and mdl == "double_track"
+        sol = solve_dynamic(car, tr, half, v0, guess, mdl, tv, util, max_iter, job, verbose, fixed_line)
+        if not sol["ok"]:                            # one restart from the last iterate (clears most restoration
+            first = sol                              # failures: IPOPT starts again with fresh barrier parameters)
+            sol = solve_dynamic(car, tr, half, v0, _guess_from_dynamic(first), mdl, tv, util, max_iter, job, verbose,
+                                fixed_line)
+            sol["iterations"] += first["iterations"]
+            sol["solve_s"] += first["solve_s"]
+            sol["status"] = f"{sol['status']} (after a restart: {first['status']})"
         stages.append({"model": mdl, "ok": sol["ok"], "status": sol["status"], "iterations": sol["iterations"],
                        "solve_s": sol["solve_s"]})
     q_grid = qss_on_track(veh, ev, tr)

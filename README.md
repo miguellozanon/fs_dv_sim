@@ -136,10 +136,16 @@ GPU training and MATLAB); `python3 tools/check_install.py` says what is missing.
 
 ## Without ROS: tests and closed-loop evaluation
 
+**CI:** GitHub runs the unit tests on every push (`.github/workflows/tests.yml`, Python 3.12, numpy / scipy / pyyaml /
+casadi / OpenCV; packages in `tools/ci/requirements-ci.txt`). `tools/ci/tests.yml` is a copy of the workflow: if the
+`.github` folder is missing, copy it to `.github/workflows/tests.yml`. The confidential LapSim folder is not in git, so the tests that need the LR26 skip there and
+`tests/test_testcar.py` runs the Performance Lab on a fictional test car (`tests/fixtures/testcar_lapsim`) instead.
+ROS 2, Isaac Sim and PyTorch tests skip as well. The full suite, with the LR26, still runs on the team PC.
+
 What still has to be run on the team PC (Isaac Sim, MATLAB, GPU) and what to expect: [docs/TEST_PLAN.md](docs/TEST_PLAN.md).
 
 ```bash
-python3 -m unittest discover -s tests -v          # 335 tests (incl. the LapSim port against the team's LapSim results)
+python3 -m unittest discover -s tests -v          # 346 tests (incl. the LapSim port against the team's LapSim results)
 python3 tools/link_check.py serve                 # + 'connect --host <WSL IP>' on Windows: link latency / bandwidth
 python3 tools/closed_loop_eval.py --strict        # drives all events, fails on cones / off-course / DNF
 python3 tools/closed_loop_eval.py --missions skidpad --lidar --plot out/ --set m=300

@@ -9,6 +9,8 @@ import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NEEDS_LAPSIM = unittest.skipUnless(os.path.isfile(os.path.join(ROOT, "lapsim", "LR26_LapSim", "config", "lr26_params.m")),
+                                   "lapsim/LR26_LapSim not present (confidential, not in git): CI runs without it")
 sys.path[:0] = [os.path.join(ROOT, "ros2_ws", "src", "fsdsim"), os.path.join(ROOT, "tools")]
 CONFIG = os.path.join(ROOT, "ros2_ws", "src", "fsd_sim_bringup", "config")
 LAPSIM = os.path.join(ROOT, "lapsim", "LR26_LapSim")
@@ -67,6 +69,7 @@ class TestRacingLine(unittest.TestCase):
         self.assertIs(path, acc.centerline)
 
 
+@NEEDS_LAPSIM
 class TestEfficiencyMap(unittest.TestCase):
     def tearDown(self):
         efficiency.set_active(None)
@@ -113,6 +116,7 @@ class TestEfficiencyMap(unittest.TestCase):
         self.assertAlmostEqual(E[1] / E[0], 0.90 / 0.80, places=6)
 
 
+@NEEDS_LAPSIM
 class TestGgvAndSolvers(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

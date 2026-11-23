@@ -105,8 +105,6 @@ class TestGitPush(unittest.TestCase):
         self.assertFalse(self.gp.URL_RE.match("https://github.com/x/y.git; rm -rf ~"))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TestLauncherGit(unittest.TestCase):
@@ -139,3 +137,37 @@ class TestLauncherGit(unittest.TestCase):
             _, argv, _, _ = app._job("git_check", {}, "S")
             self.assertIn("--check", argv)
             self.assertNotIn("--init", argv)
+
+
+@unittest.skipUnless(GIT, "git not installed")
+class TestIgnoreKeepsCode(unittest.TestCase):
+    """.gitignore must not drop code: an unanchored `cad/` once hid ros2_ws/src/fsdsim/fsdsim/cad/ (code) along
+    with the confidential top-level cad/ folder."""
+
+    def test_no_source_file_is_ignored(self):
+        src = []
+        for top in ("ros2_ws/src", "perf", "tools", "tests", "rl", "isaac", "isaaclab"):
+            for dirpath, dirs, files in os.walk(os.path.join(ROOT, top)):
+                dirs[:] = [d for d in dirs if d not in ("__pycache__", "uploads", "build", "install", "log")]
+                src += [os.path.relpath(os.path.join(dirpath, f), ROOT) for f in files
+                        if f.endswith((".py", ".js", ".html", ".css", ".yaml", ".m", ".csv", ".bat", ".pyw"))]
+        self.assertGreater(len(src), 100)
+        tmp = tempfile.mkdtemp()
+        try:                                             # a scratch repository with this project's .gitignore
+            shutil.copy(os.path.join(ROOT, ".gitignore"), tmp)
+            _git("init", "-q", cwd=tmp)
+            r = subprocess.run(["git", "check-ignore", "--no-index", "--stdin"], cwd=tmp, input="\n".join(src),
+                               capture_output=True, text=True)
+            ignored = [p for p in r.stdout.splitlines() if p.strip()]
+            conf = ["cad/part.stp", "assets/lr26/lr26_body.usda", "lapsim/LR26_LapSim/config/lr26_params.m"]
+            r = subprocess.run(["git", "check-ignore", "--no-index", "--stdin"], cwd=tmp, input="\n".join(conf),
+                               capture_output=True, text=True)
+            kept_out = r.stdout.split()
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+        self.assertEqual(ignored, [], "code files ignored by .gitignore")
+        self.assertEqual(sorted(kept_out), sorted(conf), "confidential files must stay ignored")
+
+
+if __name__ == "__main__":
+    unittest.main()

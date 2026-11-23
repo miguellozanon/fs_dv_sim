@@ -11,6 +11,8 @@ import unittest
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NEEDS_LAPSIM = unittest.skipUnless(os.path.isfile(os.path.join(ROOT, "lapsim", "LR26_LapSim", "config", "lr26_params.m")),
+                                   "lapsim/LR26_LapSim not present (confidential, not in git): CI runs without it")
 SRC = os.path.join(ROOT, "ros2_ws", "src")
 sys.path[:0] = [os.path.join(SRC, "fsdsim"), os.path.join(SRC, "fsd_dashboard")]
 
@@ -135,6 +137,7 @@ class TestIntegration(unittest.TestCase):
             text = open(os.path.join(SRC, "fsd_sim_bringup", "launch", f)).read()
             self.assertIn('DeclareLaunchArgument("longitudinal"', text)
 
+    @NEEDS_LAPSIM
     def test_dashboard_switches_driver_and_trains(self):
         from fsd_dashboard.demo import DemoRunner
 

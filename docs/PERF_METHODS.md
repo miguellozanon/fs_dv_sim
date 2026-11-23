@@ -143,7 +143,8 @@ subject to the vehicle's equations of motion (in s), the tyre, powertrain and st
   method; the difference between QSS on its own grid and on the 1 m grid is the grid (autocross: 49.94 against 49.85 s).
 * **Open tracks.** The point mass starts at v = 0. The dynamic models start at 1 m/s (the equations divide by the
   speed); the time to reach 1 m/s at the traction limit is added (`t_start_correction`, ~0.07 s).
-* **Failure.** When a stage does not converge, `ok` is false and no time or points are given (the traces of the last
+* **Failure.** A dynamic stage that does not converge is restarted once from its last iterate (this cleared an
+  IPOPT restoration failure of the single track on the CI test car's endurance). When it still does not converge, `ok` is false and no time or points are given (the traces of the last
   iterate are returned for diagnosis only).
 
 ### 4a. Point mass on the ggV envelope

@@ -168,3 +168,4 @@ textarea.extra { width: 100%; font-family: ui-monospace, Consolas, monospace; pa
 @media (max-width: 980px) { .gdl { grid-template-columns: 1fr; } .gdl dd { margin-bottom: 0.4rem; } }
 .guide [id] { scroll-margin-top: 7rem; }
 .newhere a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+.ptable tr.hl td { font-weight: 600; }

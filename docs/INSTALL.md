@@ -105,7 +105,7 @@ python3 -m pip install --user --break-system-packages torch            # RL trai
 ```bash
 cd /mnt/c/formula_student/fsg-dv-sim
 python3 tools/check_install.py                 # "ready: tools and offline demo yes | ROS 2 simulators yes"
-python3 -m unittest discover -s tests          # 335 tests, OK (5-13 minutes; a few skipped without PyTorch)
+python3 -m unittest discover -s tests          # 346 tests, OK (5-13 minutes; a few skipped without PyTorch)
 python3 tools/regression.py --quick            # 12 closed-loop cases, all ok (under a minute)
 ```
 

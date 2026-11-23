@@ -1,0 +1,8 @@
+# Packages for the CI tests (not for the car or Isaac Sim). Versions left open on purpose: the CI should notice
+# when a new release breaks something.
+numpy
+scipy
+pyyaml
+casadi
+opencv-python-headless
+matplotlib

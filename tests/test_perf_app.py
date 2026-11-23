@@ -145,6 +145,19 @@ class TestEnergy(PerfTestCase):
 
 
 class TestTransient(PerfTestCase):
+    def test_transient_line_smoothing_on_measured_tracks(self):
+        from perflab import transient
+
+        r = transient.run(self.lab, "autocross", [], "competition_fsa2025_real.m")
+        self.assertTrue(r["measured_track"])
+        self.assertEqual(r["line_smoothing_m"], 0.25)
+        self.assertEqual(r["status"], "finished")
+        self.assertEqual(r["off_track_s"], 0.0)
+        self.assertLess(r["t_lap"], 1.12 * r["qss"]["t_lap"])
+        self.assertEqual(transient.run(self.lab, "skidpad")["line_smoothing_m"], 0.0)   # basic / table tracks: as they are
+        with self.assertRaises(ValueError):
+            transient.run(self.lab, "skidpad", line_smoothing=3)
+
     def test_close_loop(self):
         from perflab.transient import close_loop
 

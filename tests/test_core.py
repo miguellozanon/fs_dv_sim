@@ -35,7 +35,10 @@ class TestConfig(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             veh, sens, sim = load_all_configs(CONFIG)
-        self.assertEqual([str(x.message) for x in w], [])
+        msgs = [str(x.message) for x in w]
+        if not os.path.isfile(os.path.join(ROOT, "lapsim", "LR26_LapSim", "config", "lr26_params.m")):
+            msgs = [m for m in msgs if "LR26_LapSim folder not found" not in m]     # CI: no confidential LapSim
+        self.assertEqual(msgs, [])
         self.assertEqual(sens.lidar.channels, 64)
         self.assertAlmostEqual(veh.lr, veh.wheelbase - veh.lf)
         self.assertEqual(sim.events.skidpad.inner_diameter, 15.25)
